@@ -1,0 +1,590 @@
+<template>
+  <section class="page page-crear">
+    <header class="page-header rutina-header">
+      <button class="back-btn" @click="goBack">← Volver</button>
+      <h1>Editar rutina</h1>
+      <p>Modificá el nombre, las semanas, los días y los ejercicios de tu rutina.</p>
+    </header>
+
+    <LoadingSpinner v-if="loadingRutina" label="Cargando rutina..." />
+
+    <template v-if="!loadingRutina">
+      <!-- Nombre de rutina -->
+      <div class="form-group">
+        <label class="form-label">Nombre de la rutina</label>
+        <input
+          v-model="form.nombre"
+          type="text"
+          class="form-input"
+          placeholder="Ej: Hipertrofia Fase 1"
+        />
+      </div>
+
+      <!-- Semanas -->
+      <section class="form-section">
+        <div class="section-header">
+          <h2 class="section-title">Semanas</h2>
+          <button type="button" class="btn-add" @click="addSemana">+ Semana</button>
+        </div>
+
+        <div v-for="(semana, sIdx) in form.semanas" :key="sIdx" class="card semana-block">
+          <div class="block-header">
+            <span class="pill">Semana {{ sIdx + 1 }}</span>
+            <button
+              v-if="form.semanas.length > 1"
+              type="button"
+              class="btn-remove"
+              @click="removeSemana(sIdx)"
+            >
+              Eliminar
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label class="form-label">Nombre</label>
+              <input v-model="semana.nombre" type="text" class="form-input" placeholder="Ej: Adaptación" />
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label">Tipo de esfuerzo</label>
+              <input v-model="semana.tipo_esfuerzo" type="text" class="form-input" placeholder="Ej: Moderado" />
+            </div>
+          </div>
+
+          <!-- Días -->
+          <div class="dias-section">
+            <div class="section-header sub">
+              <h3 class="section-subtitle">Días</h3>
+              <button type="button" class="btn-add btn-add-sm" @click="addDia(sIdx)">+ Día</button>
+            </div>
+
+            <div v-for="(dia, dIdx) in semana.dias" :key="dIdx" class="dia-block">
+              <div class="block-header">
+                <span class="pill pill-subtle">Día {{ dIdx + 1 }}</span>
+                <button
+                  v-if="semana.dias.length > 1"
+                  type="button"
+                  class="btn-remove btn-remove-sm"
+                  @click="removeDia(sIdx, dIdx)"
+                >
+                  Eliminar
+                </button>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Nombre</label>
+                  <input v-model="dia.nombre" type="text" class="form-input" placeholder="Ej: Tren superior" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Movilidad (opcional)</label>
+                  <input v-model="dia.movilidad" type="text" class="form-input" />
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Activación (opcional)</label>
+                  <input v-model="dia.activacion" type="text" class="form-input" />
+                </div>
+              </div>
+
+              <!-- Ejercicios -->
+              <div class="ejercicios-section">
+                <div class="section-header sub">
+                  <h4 class="section-subtitle">Ejercicios</h4>
+                  <button type="button" class="btn-add btn-add-sm" @click="addEjercicio(sIdx, dIdx)">
+                    + Ejercicio
+                  </button>
+                </div>
+
+                <div v-for="(ej, eIdx) in dia.ejercicios" :key="eIdx" class="ejercicio-block">
+                  <div class="block-header">
+                    <span class="pill pill-subtle">Ej {{ eIdx + 1 }}</span>
+                    <button
+                      v-if="dia.ejercicios.length > 1"
+                      type="button"
+                      class="btn-remove btn-remove-sm"
+                      @click="removeEjercicio(sIdx, dIdx, eIdx)"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group flex-1">
+                      <label class="form-label">Nombre</label>
+                      <input v-model="ej.nombre" type="text" class="form-input" placeholder="Ej: Press banca" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Código (opcional)</label>
+                      <input v-model="ej.codigo" type="text" class="form-input form-input-sm" placeholder="Ej: A1" />
+                    </div>
+                  </div>
+
+                  <!-- Datos por semana -->
+                  <div class="semana-data-grid">
+                    <div v-for="(_, esIdx) in form.semanas" :key="esIdx" class="semana-data-item">
+                      <span class="semana-data-label">S{{ esIdx + 1 }}</span>
+                      <div class="semana-data-fields">
+                        <div class="mini-field">
+                          <label>Kg</label>
+                          <input
+                            v-model.number="getEjSemana(ej, esIdx).kg"
+                            type="number"
+                            step="0.5"
+                            class="form-input form-input-xs"
+                          />
+                        </div>
+                        <div class="mini-field">
+                          <label>Reps</label>
+                          <input
+                            v-model.number="getEjSemana(ej, esIdx).reps"
+                            type="number"
+                            class="form-input form-input-xs"
+                          />
+                        </div>
+                        <div class="mini-field">
+                          <label>Series</label>
+                          <input
+                            v-model.number="getEjSemana(ej, esIdx).series"
+                            type="number"
+                            class="form-input form-input-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p v-if="error" class="error-banner">{{ error }}</p>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn-action btn-submit"
+          :disabled="saving"
+          @click="handleSubmit"
+        >
+          {{ saving ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </template>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useRutinaStore } from '@/stores/rutina';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
+
+interface FormEjSemana {
+  kg: number | null;
+  reps: number;
+  series: number;
+}
+
+interface FormEjercicio {
+  nombre: string;
+  codigo: string;
+  semanas: FormEjSemana[];
+}
+
+interface FormDia {
+  nombre: string;
+  movilidad: string;
+  activacion: string;
+  ejercicios: FormEjercicio[];
+}
+
+interface FormSemana {
+  nombre: string;
+  tipo_esfuerzo: string;
+  dias: FormDia[];
+}
+
+const router = useRouter();
+const route = useRoute();
+const rutinaStore = useRutinaStore();
+
+const rutinaId = Number(route.params.id);
+const saving = ref(false);
+const loadingRutina = computed(() => rutinaStore.loading);
+const error = computed(() => rutinaStore.error);
+
+const form = reactive({
+  nombre: '',
+  semanas: [] as FormSemana[],
+});
+
+function makeEjSemana(): FormEjSemana {
+  return { kg: null, reps: 0, series: 0 };
+}
+
+function makeEjercicio(numSemanas: number): FormEjercicio {
+  return {
+    nombre: '',
+    codigo: '',
+    semanas: Array.from({ length: numSemanas }, () => makeEjSemana()),
+  };
+}
+
+function makeDia(numSemanas: number): FormDia {
+  return {
+    nombre: '',
+    movilidad: '',
+    activacion: '',
+    ejercicios: [makeEjercicio(numSemanas)],
+  };
+}
+
+function getEjSemana(ej: FormEjercicio, semanaIdx: number): FormEjSemana {
+  while (ej.semanas.length <= semanaIdx) {
+    ej.semanas.push(makeEjSemana());
+  }
+  return ej.semanas[semanaIdx];
+}
+
+function addSemana() {
+  const newCount = form.semanas.length + 1;
+  form.semanas.push({ nombre: '', tipo_esfuerzo: '', dias: [makeDia(newCount)] });
+  for (const semana of form.semanas) {
+    for (const dia of semana.dias) {
+      for (const ej of dia.ejercicios) {
+        while (ej.semanas.length < newCount) {
+          ej.semanas.push(makeEjSemana());
+        }
+      }
+    }
+  }
+}
+
+function removeSemana(idx: number) {
+  form.semanas.splice(idx, 1);
+  const newCount = form.semanas.length;
+  for (const semana of form.semanas) {
+    for (const dia of semana.dias) {
+      for (const ej of dia.ejercicios) {
+        if (ej.semanas.length > newCount) {
+          ej.semanas.splice(idx, 1);
+        }
+      }
+    }
+  }
+}
+
+function addDia(sIdx: number) {
+  form.semanas[sIdx].dias.push(makeDia(form.semanas.length));
+}
+
+function removeDia(sIdx: number, dIdx: number) {
+  form.semanas[sIdx].dias.splice(dIdx, 1);
+}
+
+function addEjercicio(sIdx: number, dIdx: number) {
+  form.semanas[sIdx].dias[dIdx].ejercicios.push(makeEjercicio(form.semanas.length));
+}
+
+function removeEjercicio(sIdx: number, dIdx: number, eIdx: number) {
+  form.semanas[sIdx].dias[dIdx].ejercicios.splice(eIdx, 1);
+}
+
+function goBack() {
+  router.push({ name: 'home' });
+}
+
+// Pre-cargar datos de la rutina existente
+onMounted(async () => {
+  await rutinaStore.loadRutinaById(rutinaId);
+  const rutina = rutinaStore.rutinaActual;
+  if (!rutina) return;
+
+  form.nombre = rutina.nombre;
+  form.semanas = rutina.semanas.map((semana) => ({
+    nombre: semana.nombre,
+    tipo_esfuerzo: semana.tipo_esfuerzo,
+    dias: semana.dias.map((dia) => ({
+      nombre: dia.nombre,
+      movilidad: dia.movilidad ?? '',
+      activacion: dia.activacion ?? '',
+      ejercicios: dia.ejercicios.map((ej) => ({
+        nombre: ej.nombre,
+        codigo: ej.codigo ?? '',
+        semanas: rutina.semanas.map((s) => {
+          const es = ej.ejercicioSemanas.find((x) => x.semanaId === s.id);
+          return { kg: es?.kg ?? null, reps: es?.reps ?? 0, series: es?.series ?? 0 };
+        }),
+      })),
+    })),
+  }));
+});
+
+async function handleSubmit() {
+  if (!form.nombre.trim()) return;
+
+  saving.value = true;
+  try {
+    await rutinaStore.editarRutina(rutinaId, {
+      nombre: form.nombre.trim(),
+      semanas: form.semanas.map((s) => ({
+        nombre: s.nombre.trim() || 'Semana',
+        tipo_esfuerzo: s.tipo_esfuerzo.trim() || 'Normal',
+        dias: s.dias.map((d) => ({
+          nombre: d.nombre.trim() || 'Día',
+          movilidad: d.movilidad.trim() || null,
+          activacion: d.activacion.trim() || null,
+          ejercicios: d.ejercicios.map((ej) => ({
+            nombre: ej.nombre.trim() || 'Ejercicio',
+            codigo: ej.codigo.trim() || null,
+            ejercicioSemanas: ej.semanas.map((es, esIdx) => ({
+              semanaNumero: esIdx + 1,
+              kg: es.kg,
+              reps: es.reps || 0,
+              series: es.series || 0,
+            })),
+          })),
+        })),
+      })),
+    });
+    router.push({ name: 'home' });
+  } catch {
+    // Error ya manejado por el store
+  } finally {
+    saving.value = false;
+  }
+}
+</script>
+
+<style scoped>
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.section-header.sub {
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+.section-title {
+  margin: 0;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.section-subtitle {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.semana-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dia-block {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ejercicio-block {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(5, 6, 8, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.form-input {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 6, 8, 0.8);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.form-input:focus {
+  border-color: var(--accent);
+}
+.form-input-sm {
+  max-width: 100px;
+}
+.form-input-xs {
+  padding: 4px 6px;
+  font-size: 12px;
+  width: 100%;
+}
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+.flex-1 {
+  flex: 1;
+}
+.btn-add {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed rgba(255, 92, 43, 0.4);
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.btn-add:hover {
+  background: rgba(255, 92, 43, 0.08);
+}
+.btn-add-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.btn-remove {
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background var(--transition-fast);
+}
+.btn-remove:hover {
+  background: rgba(255, 59, 92, 0.14);
+}
+.btn-remove-sm {
+  font-size: 10px;
+}
+.semana-data-grid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.semana-data-item {
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.semana-data-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.semana-data-fields {
+  display: flex;
+  gap: 4px;
+}
+.mini-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.mini-field label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+.btn-action {
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 6, 8, 0.9);
+  color: var(--text);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.btn-submit {
+  padding: 12px 28px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 92, 43, 0.4);
+  background: linear-gradient(120deg, rgba(255, 92, 43, 0.2), rgba(5, 6, 8, 0.9));
+  color: var(--accent-strong);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(255, 92, 43, 0.2);
+}
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.dias-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ejercicios-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+  }
+  .semana-data-fields {
+    flex-wrap: wrap;
+  }
+}
+</style>
