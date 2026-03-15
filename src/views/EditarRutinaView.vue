@@ -216,7 +216,21 @@ const rutinaStore = useRutinaStore();
 const rutinaId = Number(route.params.id);
 const saving = ref(false);
 const loadingRutina = computed(() => rutinaStore.loading);
-const error = computed(() => rutinaStore.error);
+const validationError = ref('');
+const error = computed(() => validationError.value || rutinaStore.error);
+
+function validateForm(): string | null {
+  if (!form.nombre.trim()) return 'El nombre de la rutina es obligatorio.';
+  if (form.nombre.trim().length > 200) return 'El nombre es demasiado largo (máx 200 caracteres).';
+  for (const [sIdx, semana] of form.semanas.entries()) {
+    for (const [dIdx, dia] of semana.dias.entries()) {
+      for (const [eIdx, ej] of dia.ejercicios.entries()) {
+        if (!ej.nombre.trim()) return `Falta el nombre del ejercicio ${eIdx + 1} en día ${dIdx + 1}, semana ${sIdx + 1}.`;
+      }
+    }
+  }
+  return null;
+}
 
 const form = reactive({
   nombre: '',
@@ -326,7 +340,12 @@ onMounted(async () => {
 });
 
 async function handleSubmit() {
-  if (!form.nombre.trim()) return;
+  validationError.value = '';
+  const vError = validateForm();
+  if (vError) {
+    validationError.value = vError;
+    return;
+  }
 
   saving.value = true;
   try {
