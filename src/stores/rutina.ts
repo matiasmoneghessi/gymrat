@@ -33,8 +33,7 @@ export const useRutinaStore = defineStore('rutina', {
         this.rutinas = await fetchRutinas(this._getToken());
       } catch (err) {
         this.error = 'No se pudieron cargar las rutinas.';
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         this.loading = false;
       }
@@ -48,8 +47,7 @@ export const useRutinaStore = defineStore('rutina', {
       } catch (err) {
         this.error = 'No se pudo cargar la rutina.';
         this.rutinaActual = null;
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         this.loading = false;
       }
@@ -62,8 +60,7 @@ export const useRutinaStore = defineStore('rutina', {
         await createRutina(data, this._getToken());
       } catch (err) {
         this.error = 'No se pudo crear la rutina.';
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
         throw err;
       } finally {
         this.loading = false;
@@ -77,8 +74,7 @@ export const useRutinaStore = defineStore('rutina', {
         await updateRutina(id, data, this._getToken());
       } catch (err) {
         this.error = 'No se pudo actualizar la rutina.';
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
         throw err;
       } finally {
         this.loading = false;
@@ -93,8 +89,7 @@ export const useRutinaStore = defineStore('rutina', {
         this.rutinas = this.rutinas.filter((r) => r.id !== id);
       } catch (err) {
         this.error = 'No se pudo eliminar la rutina.';
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         this.loading = false;
       }

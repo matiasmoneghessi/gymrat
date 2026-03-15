@@ -40,8 +40,7 @@ export const useAuthStore = defineStore('auth', {
         this.session = data.session ?? null;
         this.user = data.session?.user ?? null;
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[Auth] Error al inicializar sesión', err);
+        if (import.meta.env.DEV) console.error('[Auth] Error al inicializar sesión', err);
         this.error = 'No se pudo comprobar la sesión actual.';
       } finally {
         this.loading = false;
@@ -67,8 +66,7 @@ export const useAuthStore = defineStore('auth', {
 
         if (error) throw error;
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[Auth] Error al iniciar sesión con Google', err);
+        if (import.meta.env.DEV) console.error('[Auth] Error al iniciar sesión con Google', err);
         this.error = 'No se pudo iniciar sesión con Google. Probá de nuevo.';
       } finally {
         this.loading = false;
@@ -87,8 +85,7 @@ export const useAuthStore = defineStore('auth', {
 
         if (error) throw error;
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[Auth] Error al iniciar sesión con token de Google', err);
+        if (import.meta.env.DEV) console.error('[Auth] Error al iniciar sesión con token de Google', err);
         this.error = 'No se pudo iniciar sesión con Google. Probá de nuevo.';
       } finally {
         this.loading = false;
@@ -106,8 +103,7 @@ export const useAuthStore = defineStore('auth', {
         this.session = null;
         this.user = null;
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[Auth] Error al cerrar sesión', err);
+        if (import.meta.env.DEV) console.error('[Auth] Error al cerrar sesión', err);
         this.error = 'No se pudo cerrar sesión. Probá de nuevo.';
       } finally {
         this.loading = false;

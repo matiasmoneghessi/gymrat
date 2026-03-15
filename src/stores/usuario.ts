@@ -48,8 +48,7 @@ export const useUsuarioStore = defineStore('usuario', {
       } catch (err) {
         this.error = 'No se pudo cargar el usuario actual.';
         this.usuario = null;
-        // eslint-disable-next-line no-console
-        console.error(err);
+        if (import.meta.env.DEV) console.error(err);
       } finally {
         this.loading = false;
       }
