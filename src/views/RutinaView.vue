@@ -50,6 +50,7 @@ import { useRutinaStore } from '@/stores/rutina';
 import DiaCard from '@/components/DiaCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
+
 const route = useRoute();
 const router = useRouter();
 const rutinaStore = useRutinaStore();

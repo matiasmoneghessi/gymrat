@@ -152,41 +152,23 @@
                   </div>
                 </div>
 
-                <!-- Datos por semana -->
-                <div class="semana-data-grid">
-                  <div
-                    v-for="(_, esIdx) in form.semanas"
-                    :key="esIdx"
-                    class="semana-data-item"
-                  >
-                    <span class="semana-data-label">S{{ esIdx + 1 }}</span>
-                    <div class="semana-data-fields">
-                      <div class="mini-field">
-                        <label>Kg</label>
-                        <input
-                          v-model.number="getEjSemana(ej, esIdx).kg"
-                          type="number"
-                          step="0.5"
-                          class="form-input form-input-xs"
-                        />
-                      </div>
-                      <div class="mini-field">
-                        <label>Reps</label>
-                        <input
-                          v-model.number="getEjSemana(ej, esIdx).reps"
-                          type="number"
-                          class="form-input form-input-xs"
-                        />
-                      </div>
-                      <div class="mini-field">
-                        <label>Series</label>
-                        <input
-                          v-model.number="getEjSemana(ej, esIdx).series"
-                          type="number"
-                          class="form-input form-input-xs"
-                        />
-                      </div>
-                    </div>
+                <!-- Datos de esta semana -->
+                <div class="semana-data-fields">
+                  <div class="mini-field">
+                    <label>Kg</label>
+                    <input v-model.number="ej.kg" type="number" step="0.5" class="form-input form-input-xs" />
+                  </div>
+                  <div class="mini-field">
+                    <label>
+                      <button type="button" class="tipo-reps-toggle" @click="ej.tipo_reps = ej.tipo_reps === 'reps' ? 'seg' : 'reps'">
+                        {{ ej.tipo_reps === 'seg' ? 'Seg' : 'Reps' }} ↕
+                      </button>
+                    </label>
+                    <input v-model.number="ej.reps" type="number" class="form-input form-input-xs" />
+                  </div>
+                  <div class="mini-field">
+                    <label>Series</label>
+                    <input v-model.number="ej.series" type="number" class="form-input form-input-xs" />
                   </div>
                 </div>
               </div>
@@ -217,16 +199,13 @@ import { reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRutinaStore } from '@/stores/rutina';
 
-interface FormEjSemana {
-  kg: number | null;
-  reps: number;
-  series: number;
-}
-
 interface FormEjercicio {
   nombre: string;
   codigo: string;
-  semanas: FormEjSemana[];
+  kg: number | null;
+  reps: number;
+  series: number;
+  tipo_reps: 'reps' | 'seg';
 }
 
 interface FormDia {
@@ -262,80 +241,47 @@ function validateForm(): string | null {
   return null;
 }
 
-function makeEjSemana(): FormEjSemana {
-  return { kg: null, reps: 0, series: 0 };
+function makeEjercicio(): FormEjercicio {
+  return { nombre: '', codigo: '', kg: null, reps: 0, series: 0, tipo_reps: 'reps' };
 }
 
-function makeEjercicio(numSemanas: number): FormEjercicio {
-  return {
-    nombre: '',
-    codigo: '',
-    semanas: Array.from({ length: numSemanas }, () => makeEjSemana()),
-  };
+function makeDia(): FormDia {
+  return { nombre: '', movilidad: '', activacion: '', ejercicios: [makeEjercicio()] };
 }
 
-function makeDia(numSemanas: number): FormDia {
-  return {
-    nombre: '',
-    movilidad: '',
-    activacion: '',
-    ejercicios: [makeEjercicio(numSemanas)],
-  };
+function makeSemana(): FormSemana {
+  return { nombre: '', tipo_esfuerzo: '', dias: [makeDia()] };
 }
 
-function makeSemana(numSemanas: number): FormSemana {
+function copySemana(semana: FormSemana): FormSemana {
   return {
     nombre: '',
     tipo_esfuerzo: '',
-    dias: [makeDia(numSemanas)],
+    dias: semana.dias.map((dia) => ({
+      nombre: dia.nombre,
+      movilidad: dia.movilidad,
+      activacion: dia.activacion,
+      ejercicios: dia.ejercicios.map((ej) => ({ ...ej })),
+    })),
   };
 }
 
 const form = reactive({
   nombre: '',
-  semanas: [makeSemana(1)] as FormSemana[],
+  semanas: [makeSemana()] as FormSemana[],
 });
 
-function getEjSemana(ej: FormEjercicio, semanaIdx: number): FormEjSemana {
-  // Asegurar que el array tiene slots para todas las semanas
-  while (ej.semanas.length <= semanaIdx) {
-    ej.semanas.push(makeEjSemana());
-  }
-  return ej.semanas[semanaIdx];
-}
-
 function addSemana() {
-  const newCount = form.semanas.length + 1;
-  form.semanas.push(makeSemana(newCount));
-  // Extender los ejercicioSemanas de ejercicios existentes
-  for (const semana of form.semanas) {
-    for (const dia of semana.dias) {
-      for (const ej of dia.ejercicios) {
-        while (ej.semanas.length < newCount) {
-          ej.semanas.push(makeEjSemana());
-        }
-      }
-    }
-  }
+  const last = form.semanas[form.semanas.length - 1];
+  form.semanas.push(copySemana(last));
 }
 
 function removeSemana(idx: number) {
   form.semanas.splice(idx, 1);
-  // Recortar los ejercicioSemanas
-  const newCount = form.semanas.length;
-  for (const semana of form.semanas) {
-    for (const dia of semana.dias) {
-      for (const ej of dia.ejercicios) {
-        if (ej.semanas.length > newCount) {
-          ej.semanas.splice(idx, 1);
-        }
-      }
-    }
-  }
 }
 
 function addDia(sIdx: number) {
-  form.semanas[sIdx].dias.push(makeDia(form.semanas.length));
+  form.semanas[sIdx].dias.push(makeDia());
 }
 
 function removeDia(sIdx: number, dIdx: number) {
@@ -343,7 +289,7 @@ function removeDia(sIdx: number, dIdx: number) {
 }
 
 function addEjercicio(sIdx: number, dIdx: number) {
-  form.semanas[sIdx].dias[dIdx].ejercicios.push(makeEjercicio(form.semanas.length));
+  form.semanas[sIdx].dias[dIdx].ejercicios.push(makeEjercicio());
 }
 
 function removeEjercicio(sIdx: number, dIdx: number, eIdx: number) {
@@ -367,7 +313,7 @@ async function handleSubmit() {
   try {
     await rutinaStore.crearRutina({
       nombre: form.nombre.trim(),
-      semanas: form.semanas.map((s) => ({
+      semanas: form.semanas.map((s, sIdx) => ({
         nombre: s.nombre.trim() || `Semana`,
         tipo_esfuerzo: s.tipo_esfuerzo.trim() || 'Normal',
         dias: s.dias.map((d) => ({
@@ -377,12 +323,7 @@ async function handleSubmit() {
           ejercicios: d.ejercicios.map((ej) => ({
             nombre: ej.nombre.trim() || 'Ejercicio',
             codigo: ej.codigo.trim() || null,
-            ejercicioSemanas: ej.semanas.map((es, esIdx) => ({
-              semanaNumero: esIdx + 1,
-              kg: es.kg,
-              reps: es.reps || 0,
-              series: es.series || 0,
-            })),
+            ejercicioSemanas: [{ semanaNumero: sIdx + 1, kg: ej.kg, reps: ej.reps || 0, series: ej.series || 0, tipo_reps: ej.tipo_reps }],
           })),
         })),
       })),
@@ -592,6 +533,20 @@ async function handleSubmit() {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.tipo-reps-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .form-actions {

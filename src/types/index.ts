@@ -5,6 +5,7 @@ export interface EjercicioSemana {
   kg?: number | null;
   reps: number;
   series: number;
+  tipo_reps: 'reps' | 'seg';
 }
 
 export interface Usuario {
@@ -68,6 +69,7 @@ export interface CreateEjercicioSemanaInput {
   kg: number | null;
   reps: number;
   series: number;
+  tipo_reps: 'reps' | 'seg';
 }
 
 export interface CreateEjercicioInput {

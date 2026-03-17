@@ -12,7 +12,7 @@
         </span>
       </div>
       <div class="metric">
-        <span class="metric-label">Reps</span>
+        <span class="metric-label">{{ serie?.tipo_reps === 'seg' ? 'Seg' : 'Reps' }}</span>
         <span class="metric-value">{{ serie?.reps ?? '—' }}</span>
       </div>
       <div class="metric">
