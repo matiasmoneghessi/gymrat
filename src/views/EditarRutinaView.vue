@@ -553,8 +553,69 @@ async function handleSubmit() {
   .form-row {
     flex-direction: column;
   }
+
+  /* Código input: sin max-width al apilarse */
+  .form-input-sm {
+    max-width: none;
+  }
+
+  /* Inputs principales: 16px previene zoom en iOS */
+  .form-input {
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  /* Mini inputs (Kg/Reps/Series): touch targets correctos */
+  .form-input-xs {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 8px 8px;
+    text-align: center;
+  }
+
+  /* Kg / Reps / Series: grilla de 3 columnas iguales */
   .semana-data-fields {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .mini-field label {
+    font-size: 10px;
+    justify-content: center;
+  }
+
+  .btn-add {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .btn-remove {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* Toggle Reps/Seg: superficie táctil completa */
+  .tipo-reps-toggle {
+    font-size: 11px;
+    min-height: 44px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .btn-submit {
+    width: 100%;
+    min-height: 52px;
+    font-size: 15px;
+    justify-content: center;
   }
 }
 </style>

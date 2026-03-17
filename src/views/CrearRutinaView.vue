@@ -598,8 +598,46 @@ async function handleSubmit() {
     flex-direction: column;
   }
 
-  .semana-data-fields {
-    flex-wrap: wrap;
+  /* Prevent iOS zoom on focus by using 16px font */
+  .form-input {
+    font-size: 16px;
+  }
+
+  .form-input-xs {
+    font-size: 16px;
+  }
+
+  /* Larger touch targets for add/remove buttons */
+  .btn-add {
+    min-height: 40px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .btn-remove {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* Tipo-reps toggle bigger hit area */
+  .tipo-reps-toggle {
+    font-size: 11px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Full-width submit button */
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .btn-submit {
+    width: 100%;
+    min-height: 52px;
+    font-size: 15px;
+    justify-content: center;
   }
 }
 </style>
