@@ -123,3 +123,39 @@ export interface EjercicioDetalle {
   catalogoEjercicio?: EjercicioCatalogo | null;
   ejercicioSemanas: (EjercicioSemana & { serieDetalles: SerieDetalle[] })[];
 }
+
+// ─── Sesiones de entrenamiento ────────────────────────────────────────────────
+
+export interface SesionSerieInput {
+  numero_serie: number;
+  kg: number | null;
+  reps: number;
+  completada: boolean;
+}
+
+export interface SesionEjercicioInput {
+  ejercicioId: number;
+  completado: boolean;
+  series: SesionSerieInput[];
+}
+
+export interface CreateSesionInput {
+  rutinaId: number;
+  semanaId: number;
+  diaId: number;
+  fecha: string;
+  duracion_minutos: number;
+  ejercicios: SesionEjercicioInput[];
+}
+
+export interface SesionResumen {
+  id: number;
+  rutinaId: number;
+  rutinaNombre: string;
+  semanaNumero: number;
+  diaNombre: string;
+  fecha: string;
+  duracion_minutos: number;
+  totalEjercicios: number;
+  ejerciciosCompletados: number;
+}

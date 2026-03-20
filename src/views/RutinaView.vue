@@ -68,7 +68,13 @@
       </div>
 
       <section class="dias-grid">
-        <DiaCard v-for="dia in semanaSeleccionada.dias" :key="dia.id" :dia="dia" />
+        <DiaCard
+          v-for="dia in semanaSeleccionada.dias"
+          :key="dia.id"
+          :dia="dia"
+          :mostrar-entrenar="true"
+          @entrenar="iniciarSesion(dia.id)"
+        />
       </section>
     </div>
   </section>
@@ -155,6 +161,15 @@ async function copyLink() {
   await navigator.clipboard.writeText(shareLink.value);
   copied.value = true;
   setTimeout(() => { copied.value = false; }, 2000);
+}
+
+function iniciarSesion(diaId: number) {
+  const id = Number(route.params.id);
+  if (!semanaActiva.value) return;
+  router.push({
+    name: 'sesion',
+    query: { rutinaId: id, semanaId: semanaActiva.value, diaId },
+  });
 }
 </script>
 

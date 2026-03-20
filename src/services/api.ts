@@ -10,6 +10,8 @@ import type {
   EjercicioCatalogo,
   EjercicioDetalle,
   SerieDetalle,
+  CreateSesionInput,
+  SesionResumen,
 } from '@/types';
 
 const api = axios.create({
@@ -148,6 +150,28 @@ export async function updateSerieDetalles(
   const { data } = await api.put<{ success: boolean; data: SerieDetalle[] }>(
     `/ejercicio-semanas/${ejercicioSemanaId}/serie-detalles`,
     { detalles },
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// ─── Sesiones de entrenamiento ────────────────────────────────────────────────
+
+export async function createSesion(
+  input: CreateSesionInput,
+  token: string,
+): Promise<{ id: number }> {
+  const { data } = await api.post<{ success: boolean; data: { id: number } }>(
+    '/sesiones',
+    input,
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function fetchSesiones(token: string): Promise<SesionResumen[]> {
+  const { data } = await api.get<{ success: boolean; data: SesionResumen[] }>(
+    '/sesiones',
     authHeaders(token),
   );
   return data.data;

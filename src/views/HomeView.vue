@@ -11,9 +11,13 @@
       <button type="button" class="btn-action btn-crear" @click="goToCrear">
         + Crear rutina
       </button>
-      <button type="button" class="btn-action btn-importar" disabled>
-        Importar desde Drive
-        <span class="badge-pronto">Próximamente</span>
+      <button type="button" class="btn-action btn-dashboard" @click="router.push({ name: 'dashboard' })">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Progreso
       </button>
     </div>
 
@@ -54,6 +58,7 @@ import { useRutinaStore } from '@/stores/rutina';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 const router = useRouter();
+
 const rutinaStore = useRutinaStore();
 
 const rutinas = computed(() => rutinaStore.rutinas);
@@ -122,6 +127,18 @@ function goToRutina(id: number) {
 .btn-importar {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.btn-dashboard {
+  background: rgba(96, 165, 250, 0.07);
+  border-color: rgba(96, 165, 250, 0.2);
+  color: #7ab8fc;
+}
+
+.btn-dashboard:hover:not(:disabled) {
+  background: rgba(96, 165, 250, 0.13);
+  border-color: rgba(96, 165, 250, 0.35);
+  box-shadow: none;
 }
 
 .badge-pronto {

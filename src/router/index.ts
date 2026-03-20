@@ -6,6 +6,8 @@ import CrearRutinaView from '@/views/CrearRutinaView.vue';
 import EditarRutinaView from '@/views/EditarRutinaView.vue';
 import RutinaCompartidaView from '@/views/RutinaCompartidaView.vue';
 import EjercicioDetalleView from '@/views/EjercicioDetalleView.vue';
+import SesionView from '@/views/SesionView.vue';
+import DashboardView from '@/views/DashboardView.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const routes: RouteRecordRaw[] = [
@@ -49,6 +51,16 @@ const routes: RouteRecordRaw[] = [
     name: 'ejercicio-detalle',
     component: EjercicioDetalleView,
     props: true,
+  },
+  {
+    path: '/sesion/nueva',
+    name: 'sesion',
+    component: SesionView,
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: DashboardView,
   },
 ];
 
