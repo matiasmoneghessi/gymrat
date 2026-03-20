@@ -1,3 +1,10 @@
+export interface SerieDetalle {
+  id: number;
+  ejercicioSemanaId: number;
+  numero_serie: number;
+  kg: number | null;
+}
+
 export interface EjercicioSemana {
   id: number;
   ejercicioId: number;
@@ -6,6 +13,7 @@ export interface EjercicioSemana {
   reps: number;
   series: number;
   tipo_reps: 'reps' | 'seg';
+  serieDetalles?: SerieDetalle[];
 }
 
 export interface Usuario {
@@ -22,6 +30,7 @@ export interface Ejercicio {
   nombre: string;
   codigo?: string | null;
   diaId: number;
+  catalogoEjercicioId?: number | null;
   ejercicioSemanas: EjercicioSemana[];
 }
 
@@ -103,5 +112,14 @@ export interface ShareTokenResponse {
 export interface EjercicioCatalogo {
   id: number;
   nombre: string;
+  imagen_url?: string | null;
+  video_url?: string | null;
 }
 
+export interface EjercicioDetalle {
+  id: number;
+  nombre: string;
+  codigo?: string | null;
+  catalogoEjercicio?: EjercicioCatalogo | null;
+  ejercicioSemanas: (EjercicioSemana & { serieDetalles: SerieDetalle[] })[];
+}

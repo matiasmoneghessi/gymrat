@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue';
 import CrearRutinaView from '@/views/CrearRutinaView.vue';
 import EditarRutinaView from '@/views/EditarRutinaView.vue';
 import RutinaCompartidaView from '@/views/RutinaCompartidaView.vue';
+import EjercicioDetalleView from '@/views/EjercicioDetalleView.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const routes: RouteRecordRaw[] = [
@@ -42,6 +43,12 @@ const routes: RouteRecordRaw[] = [
     component: RutinaCompartidaView,
     props: true,
     meta: { public: true },
+  },
+  {
+    path: '/ejercicio/:id',
+    name: 'ejercicio-detalle',
+    component: EjercicioDetalleView,
+    props: true,
   },
 ];
 

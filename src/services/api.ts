@@ -8,6 +8,8 @@ import type {
   CreateRutinaInput,
   ShareTokenResponse,
   EjercicioCatalogo,
+  EjercicioDetalle,
+  SerieDetalle,
 } from '@/types';
 
 const api = axios.create({
@@ -123,6 +125,29 @@ export async function createEjercicioCatalogo(nombre: string, token: string): Pr
   const { data } = await api.post<{ success: boolean; data: EjercicioCatalogo }>(
     '/ejercicios',
     { nombre },
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// Ejercicio detalle (con catálogo y serie_detalles)
+
+export async function fetchEjercicioDetalle(ejercicioId: number, token: string): Promise<EjercicioDetalle> {
+  const { data } = await api.get<{ success: boolean; data: EjercicioDetalle }>(
+    `/ejercicios-rutina/${ejercicioId}`,
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function updateSerieDetalles(
+  ejercicioSemanaId: number,
+  detalles: { numero_serie: number; kg: number | null }[],
+  token: string,
+): Promise<SerieDetalle[]> {
+  const { data } = await api.put<{ success: boolean; data: SerieDetalle[] }>(
+    `/ejercicio-semanas/${ejercicioSemanaId}/serie-detalles`,
+    { detalles },
     authHeaders(token),
   );
   return data.data;
