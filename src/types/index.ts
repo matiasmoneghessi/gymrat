@@ -100,3 +100,8 @@ export interface ShareTokenResponse {
   token: string;
 }
 
+export interface EjercicioCatalogo {
+  id: number;
+  nombre: string;
+}
+

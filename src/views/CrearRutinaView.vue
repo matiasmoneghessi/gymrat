@@ -134,12 +134,7 @@
                 <div class="form-row">
                   <div class="form-group flex-1">
                     <label class="form-label">Nombre</label>
-                    <input
-                      v-model="ej.nombre"
-                      type="text"
-                      class="form-input"
-                      placeholder="Ej: Press banca"
-                    />
+                    <EjercicioSelect v-model="ej.nombre" />
                   </div>
                   <div class="form-group">
                     <label class="form-label">Código (opcional)</label>
@@ -198,6 +193,7 @@
 import { reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRutinaStore } from '@/stores/rutina';
+import EjercicioSelect from '@/components/EjercicioSelect.vue';
 
 interface FormEjercicio {
   nombre: string;
