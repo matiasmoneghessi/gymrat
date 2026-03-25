@@ -412,4 +412,35 @@ onMounted(() => {
     font-size: clamp(48px, 14vw, 64px);
   }
 }
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .feature-item {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .feature-item:hover {
+  background: rgba(255, 92, 43, 0.08);
+  border-color: rgba(255, 92, 43, 0.25);
+}
+
+[data-theme="light"] .login-card {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .login-card-divider span {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .error-banner {
+  color: #8b0020;
+}
+
+[data-theme="light"] .login-footer {
+  color: rgba(90, 98, 120, 0.6);
+}
+
+[data-theme="light"] .login-card-note {
+  color: rgba(90, 98, 120, 0.8);
+}
 </style>

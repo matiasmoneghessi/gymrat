@@ -7,6 +7,11 @@ import type {
   RutinaFull,
   CreateRutinaInput,
   ShareTokenResponse,
+  EjercicioCatalogo,
+  EjercicioDetalle,
+  SerieDetalle,
+  CreateSesionInput,
+  SesionResumen,
 } from '@/types';
 
 const api = axios.create({
@@ -103,6 +108,106 @@ export async function cloneRutinaFromToken(shareToken: string, token: string): P
   const { data } = await api.post<{ success: boolean; data: RutinaFull }>(
     `/rutinas/compartir/${shareToken}/clonar`,
     {},
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// Ejercicios catálogo
+
+export async function fetchEjercicios(token: string): Promise<EjercicioCatalogo[]> {
+  const { data } = await api.get<{ success: boolean; data: EjercicioCatalogo[] }>(
+    '/ejercicios',
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function createEjercicioCatalogo(nombre: string, token: string): Promise<EjercicioCatalogo> {
+  const { data } = await api.post<{ success: boolean; data: EjercicioCatalogo }>(
+    '/ejercicios',
+    { nombre },
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// Ejercicio detalle (con catálogo y serie_detalles)
+
+export async function fetchEjercicioDetalle(ejercicioId: number, token: string): Promise<EjercicioDetalle> {
+  const { data } = await api.get<{ success: boolean; data: EjercicioDetalle }>(
+    `/ejercicios/${ejercicioId}`,
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function updateSerieDetalles(
+  ejercicioSemanaId: number,
+  detalles: { numero_serie: number; kg: number | null }[],
+  token: string,
+): Promise<SerieDetalle[]> {
+  const { data } = await api.put<{ success: boolean; data: SerieDetalle[] }>(
+    `/ejercicio-semanas/${ejercicioSemanaId}/serie-detalles`,
+    { detalles },
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// ─── Importar rutina desde archivo (IA) ──────────────────────────────────────
+
+export interface ImportarRutinaResult {
+  nombre: string;
+  semanas: {
+    nombre: string;
+    tipo_esfuerzo: string;
+    dias: {
+      nombre: string;
+      movilidad: string | null;
+      activacion: string | null;
+      ejercicios: {
+        nombre: string;
+        codigo: string | null;
+        kg: number | null;
+        reps: number;
+        series: number;
+        tipo_reps: 'reps' | 'seg';
+      }[];
+    }[];
+  }[];
+}
+
+export async function importarRutinaDesdeTexto(
+  contenido: string,
+  fileName: string,
+  token: string,
+): Promise<ImportarRutinaResult> {
+  const { data } = await api.post<{ success: boolean; data: ImportarRutinaResult }>(
+    '/rutinas/importar',
+    { contenido, fileName },
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+// ─── Sesiones de entrenamiento ────────────────────────────────────────────────
+
+export async function createSesion(
+  input: CreateSesionInput,
+  token: string,
+): Promise<{ id: number }> {
+  const { data } = await api.post<{ success: boolean; data: { id: number } }>(
+    '/sesiones',
+    input,
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function fetchSesiones(token: string): Promise<SesionResumen[]> {
+  const { data } = await api.get<{ success: boolean; data: SesionResumen[] }>(
+    '/sesiones',
     authHeaders(token),
   );
   return data.data;

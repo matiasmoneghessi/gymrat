@@ -6,6 +6,30 @@
       <p>Definí el nombre, las semanas, los días y los ejercicios de tu nueva rutina.</p>
     </header>
 
+    <!-- Importar desde Google Drive -->
+    <div class="drive-import-bar card">
+      <div class="drive-import-info">
+        <svg width="18" height="18" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0a15.92 15.92 0 001.88 7.6L6.6 66.85z" fill="#0066DA"/>
+          <path d="M43.65 25L29.9 1.2a15.92 15.92 0 00-3.3 3.3L1.88 47.5A15.92 15.92 0 000 55.1h27.5L43.65 25z" fill="#00AC47"/>
+          <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25A15.92 15.92 0 0087.3 50h-27.5l5.85 11.2 7.9 15.6z" fill="#EA4335"/>
+          <path d="M43.65 25L57.4 1.2A15.79 15.79 0 0050 0H37.3a15.79 15.79 0 00-7.4 1.2L43.65 25z" fill="#00832D"/>
+          <path d="M59.8 55H27.5L13.75 78.8c1.35.8 2.9 1.2 4.5 1.2h51.1c1.6 0 3.15-.45 4.5-1.2L59.8 55z" fill="#2684FC"/>
+          <path d="M73.4 27.5L59.65 4.5a15.92 15.92 0 00-3.3-3.3L43.65 25l16.15 30H87.3a15.92 15.92 0 00-1.88-7.6L73.4 27.5z" fill="#FFBA00"/>
+        </svg>
+        <span class="drive-import-label">Importar rutina desde Google Drive</span>
+      </div>
+      <button
+        type="button"
+        class="btn-drive"
+        disabled
+      >
+        Abrir Drive
+      </button>
+    </div>
+    <p v-if="driveError" class="error-banner">{{ driveError }}</p>
+    <div v-if="driveParseOk" class="success-banner">✓ Rutina importada correctamente. Revisá los datos antes de guardar.</div>
+
     <!-- Nombre de rutina -->
     <div class="form-group">
       <label class="form-label">Nombre de la rutina</label>
@@ -134,12 +158,7 @@
                 <div class="form-row">
                   <div class="form-group flex-1">
                     <label class="form-label">Nombre</label>
-                    <input
-                      v-model="ej.nombre"
-                      type="text"
-                      class="form-input"
-                      placeholder="Ej: Press banca"
-                    />
+                    <EjercicioSelect v-model="ej.nombre" />
                   </div>
                   <div class="form-group">
                     <label class="form-label">Código (opcional)</label>
@@ -198,6 +217,10 @@
 import { reactive, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRutinaStore } from '@/stores/rutina';
+import { useAuthStore } from '@/stores/auth';
+import { useGoogleDrivePicker } from '@/composables/useGoogleDrivePicker';
+import { importarRutinaDesdeTexto } from '@/services/api';
+import EjercicioSelect from '@/components/EjercicioSelect.vue';
 
 interface FormEjercicio {
   nombre: string;
@@ -223,10 +246,76 @@ interface FormSemana {
 
 const router = useRouter();
 const rutinaStore = useRutinaStore();
+const authStore = useAuthStore();
+const { pickAndDownload, loading: drivePickerLoading, error: drivePickerError } = useGoogleDrivePicker();
 
 const saving = ref(false);
+const driveLoading = ref(false);
 const validationError = ref('');
+const driveError = ref('');
+const driveParseOk = ref(false);
 const error = computed(() => validationError.value || rutinaStore.error);
+
+// ─── Importar desde Google Drive con IA ──────────────────────────────────────
+
+async function importarDesdeDrive() {
+  driveError.value = '';
+  driveParseOk.value = false;
+
+  const token = authStore.session?.access_token;
+  if (!token) {
+    driveError.value = 'No hay sesión activa.';
+    return;
+  }
+
+  // 1. Abrir el picker y descargar el archivo
+  const result = await pickAndDownload();
+  if (!result) {
+    if (drivePickerError.value) driveError.value = drivePickerError.value;
+    return;
+  }
+
+  // 2. Enviar el contenido al backend para que la IA lo procese
+  driveLoading.value = true;
+  try {
+    const rutina = await importarRutinaDesdeTexto(result.content, result.fileName, token);
+
+    // 3. Aplicar el resultado al formulario
+    form.nombre = rutina.nombre;
+    form.semanas.splice(
+      0,
+      form.semanas.length,
+      ...rutina.semanas.map((s) => ({
+        nombre: s.nombre,
+        tipo_esfuerzo: s.tipo_esfuerzo,
+        dias: s.dias.length > 0
+          ? s.dias.map((d) => ({
+              nombre: d.nombre,
+              movilidad: d.movilidad ?? '',
+              activacion: d.activacion ?? '',
+              ejercicios: d.ejercicios.length > 0
+                ? d.ejercicios.map((ej) => ({
+                    nombre: ej.nombre,
+                    codigo: ej.codigo ?? '',
+                    kg: ej.kg,
+                    reps: ej.reps,
+                    series: ej.series,
+                    tipo_reps: ej.tipo_reps,
+                  }))
+                : [makeEjercicio()],
+            }))
+          : [makeDia()],
+      })),
+    );
+
+    driveParseOk.value = true;
+    setTimeout(() => { driveParseOk.value = false; }, 6000);
+  } catch (err: any) {
+    driveError.value = err?.response?.data?.error?.message ?? err?.message ?? 'Error al procesar el archivo con IA.';
+  } finally {
+    driveLoading.value = false;
+  }
+}
 
 function validateForm(): string | null {
   if (!form.nombre.trim()) return 'El nombre de la rutina es obligatorio.';
@@ -338,6 +427,67 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
+/* ── Google Drive import ─────────────────────────────────────── */
+.drive-import-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.drive-import-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drive-import-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.drive-import-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.btn-drive {
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(66, 133, 244, 0.4);
+  background: rgba(66, 133, 244, 0.08);
+  color: #4285f4;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-drive:hover:not(:disabled) {
+  background: rgba(66, 133, 244, 0.16);
+}
+
+.btn-drive:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.success-banner {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  font-size: 13px;
+}
+
 .form-section {
   display: flex;
   flex-direction: column;
@@ -417,19 +567,28 @@ async function handleSubmit() {
 }
 
 .form-input {
-  padding: 8px 12px;
+  padding: 10px 14px;
+  min-height: 44px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(5, 6, 8, 0.8);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
   font-family: inherit;
   outline: none;
-  transition: border-color var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.55;
 }
 
 .form-input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .form-input-sm {
@@ -437,9 +596,11 @@ async function handleSubmit() {
 }
 
 .form-input-xs {
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: 8px 6px;
+  min-height: 44px;
+  font-size: 14px;
   width: 100%;
+  text-align: center;
 }
 
 .form-row {
@@ -517,15 +678,16 @@ async function handleSubmit() {
 }
 
 .semana-data-fields {
-  display: flex;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  align-items: end;
 }
 
 .mini-field {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
 }
 
 .mini-field label {
@@ -598,13 +760,15 @@ async function handleSubmit() {
     flex-direction: column;
   }
 
-  /* Prevent iOS zoom on focus by using 16px font */
+  /* Prevent iOS zoom on focus — must be 16px minimum */
   .form-input {
     font-size: 16px;
   }
 
   .form-input-xs {
     font-size: 16px;
+    min-height: 48px;
+    padding: 10px 6px;
   }
 
   /* Larger touch targets for add/remove buttons */
@@ -639,5 +803,27 @@ async function handleSubmit() {
     font-size: 15px;
     justify-content: center;
   }
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .dia-block {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ejercicio-block {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .form-input {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 </style>

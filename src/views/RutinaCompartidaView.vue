@@ -251,4 +251,14 @@ async function handleClone() {
   text-align: center;
   padding: 10px;
 }
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .btn-action {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .success-banner {
+  color: #166534;
+}
 </style>

@@ -11,6 +11,14 @@
   --text: #f4f5f7;
   --text-muted: #a2a5b3;
   --danger: #ff3b5c;
+  /* Surfaces — semi-transparent layers */
+  --surface-1: rgba(255, 255, 255, 0.03);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.09);
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --surface-border-md: rgba(255, 255, 255, 0.12);
+  --overlay-fill: rgba(5, 6, 8, 0.65);
+  --overlay-fill-strong: rgba(5, 6, 8, 0.88);
   /* Softer, layered shadows */
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.28);
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -23,6 +31,31 @@
   --transition-fast: 200ms ease-out;
   --transition-med: 260ms ease-out;
   --transition-slow: 320ms ease-out;
+}
+
+/* ── Light mode overrides ──────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #f0f2f8;
+  --bg-elevated: #ffffff;
+  --bg-soft: #e6eaf4;
+  --border-subtle: #d0d5e8;
+  --accent: #ff5c2b;
+  --accent-soft: rgba(255, 92, 43, 0.12);
+  --accent-strong: #e84a18;
+  --text: #0d0f1a;
+  --text-muted: #5a6278;
+  --danger: #d42b47;
+  --surface-1: rgba(0, 0, 0, 0.03);
+  --surface-2: rgba(0, 0, 0, 0.04);
+  --surface-3: rgba(0, 0, 0, 0.07);
+  --surface-border: rgba(0, 0, 0, 0.09);
+  --surface-border-md: rgba(0, 0, 0, 0.14);
+  --overlay-fill: rgba(240, 242, 248, 0.85);
+  --overlay-fill-strong: rgba(255, 255, 255, 0.96);
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.07), 0 6px 20px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-accent: 0 8px 28px rgba(255, 92, 43, 0.22);
 }
 
 *,
@@ -40,6 +73,15 @@ body {
     radial-gradient(circle at 0 0, #1b2133 0, transparent 45%),
     radial-gradient(circle at 100% 100%, #29141f 0, transparent 40%),
     radial-gradient(circle at 100% 0, #19282f 0, transparent 35%),
+    var(--bg);
+  transition: background var(--transition-slow), color var(--transition-slow);
+}
+
+[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 0 0, #dde5f7 0, transparent 45%),
+    radial-gradient(circle at 100% 100%, #f5dde8 0, transparent 40%),
+    radial-gradient(circle at 100% 0, #ddf0f5 0, transparent 35%),
     var(--bg);
 }
 
@@ -78,6 +120,13 @@ button {
   top: 14px;
   z-index: 10;
   backdrop-filter: blur(18px);
+  transition: background var(--transition-slow), border-color var(--transition-slow), box-shadow var(--transition-slow);
+}
+
+[data-theme="light"] .app-header {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 245, 0.92));
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 .brand {
@@ -146,6 +195,11 @@ button {
   background: rgba(255, 255, 255, 0.04);
 }
 
+[data-theme="light"] .nav-link:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .btn-signout {
   padding: 8px 16px;
   border-radius: 999px;
@@ -212,8 +266,8 @@ button {
   justify-content: center;
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(10, 12, 18, 0.9);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -221,8 +275,8 @@ button {
 }
 
 .pill-subtle {
-  border-color: rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--surface-1);
+  background: var(--surface-1);
 }
 
 .highlight {
@@ -281,15 +335,15 @@ button {
   gap: 12px;
   padding: 10px 16px;
   border-radius: var(--radius-pill);
-  background: rgba(10, 12, 18, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
+  border: 1px solid var(--surface-border);
 }
 
 .loading-spinner .ring {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  border: 2px solid var(--surface-border-md);
   border-top-color: var(--accent-strong);
   animation: spin 680ms linear infinite;
 }
@@ -373,11 +427,12 @@ button {
     right: 0;
     height: calc(60px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: rgba(13, 15, 22, 0.97);
+    background: var(--overlay-fill-strong);
     border-top: 1px solid var(--border-subtle);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     z-index: 50;
+    transition: background var(--transition-slow), border-color var(--transition-slow);
   }
 
   .mobile-nav-item {
