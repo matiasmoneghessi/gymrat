@@ -407,26 +407,36 @@ async function handleSubmit() {
   color: var(--text-muted);
 }
 .form-input {
-  padding: 8px 12px;
+  padding: 10px 14px;
+  min-height: 44px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(5, 6, 8, 0.8);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
   font-family: inherit;
   outline: none;
-  transition: border-color var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.55;
 }
 .form-input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .form-input-sm {
   max-width: 100px;
 }
 .form-input-xs {
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: 8px 6px;
+  min-height: 44px;
+  font-size: 14px;
   width: 100%;
+  text-align: center;
 }
 .form-row {
   display: flex;
@@ -618,5 +628,27 @@ async function handleSubmit() {
     font-size: 15px;
     justify-content: center;
   }
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .dia-block {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ejercicio-block {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .form-input {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 </style>

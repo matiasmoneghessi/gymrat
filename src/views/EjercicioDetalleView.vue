@@ -44,6 +44,12 @@
         </div>
       </div>
 
+      <!-- Gráfico historial de peso -->
+      <section v-if="ejercicio.ejercicioSemanas.length > 1" class="chart-section card">
+        <h2 class="section-title">Historial de peso</h2>
+        <PesoHistorialChart :ejercicio="ejercicio" />
+      </section>
+
       <!-- Serie detalles por semana -->
       <section v-for="es in ejercicio.ejercicioSemanas" :key="es.id" class="semana-section card">
         <div class="semana-header">
@@ -103,6 +109,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
 import { fetchEjercicioDetalle, updateSerieDetalles } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import PesoHistorialChart from '@/components/PesoHistorialChart.vue';
 import type { EjercicioDetalle, EjercicioSemana, SerieDetalle } from '@/types';
 
 const route = useRoute();
@@ -263,6 +270,22 @@ onMounted(async () => {
   border: none;
 }
 
+/* Historial chart */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
 /* Semanas */
 .semana-section {
   display: flex;
@@ -412,5 +435,11 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
   }
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .form-input {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 </style>

@@ -539,20 +539,28 @@ onUnmounted(() => {
 
 .serie-input {
   width: 100%;
-  padding: 7px 8px;
+  padding: 9px 8px;
+  min-height: 44px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(5, 6, 8, 0.8);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
   color: var(--text);
-  font-size: 14px;
+  font-size: 15px;
   font-family: inherit;
   text-align: center;
   outline: none;
-  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.serie-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
 }
 
 .serie-input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .serie-input:disabled {
@@ -723,6 +731,65 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .serie-input {
     font-size: 16px;
+    min-height: 48px;
   }
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .sesion-header {
+  background: rgba(240, 242, 248, 0.92);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .progreso-bar-wrap {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .ej-check-circle {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .serie-input {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .serie-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+[data-theme="light"] .check-btn {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .btn-add-serie {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .btn-add-serie:hover {
+  border-color: var(--accent);
+}
+
+[data-theme="light"] .bottom-actions {
+  background: rgba(255, 255, 255, 0.96);
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .btn-finalizar-bottom {
+  background: linear-gradient(120deg, rgba(255, 92, 43, 0.18), rgba(255, 255, 255, 0.9));
+}
+
+[data-theme="light"] .modal-card {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-modal-secondary {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .btn-modal-secondary:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 </style>

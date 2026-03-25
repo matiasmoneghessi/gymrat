@@ -3,7 +3,7 @@
     <header class="page-header">
       <h1>Tus rutinas</h1>
       <p>
-        Acá podés ver tus rutinas de entrenamiento, crear una nueva o importar desde Google Drive.
+        Acá podés ver tus rutinas de entrenamiento o crear una nueva.
       </p>
     </header>
 
@@ -213,5 +213,21 @@ function goToRutina(id: number) {
   .btn-action {
     transition: none;
   }
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .btn-action {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .btn-crear {
+  background: linear-gradient(120deg, rgba(255, 92, 43, 0.12), rgba(255, 255, 255, 0.9));
+  border-color: rgba(255, 92, 43, 0.3);
 }
 </style>

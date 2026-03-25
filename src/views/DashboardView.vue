@@ -28,6 +28,12 @@
         </div>
       </div>
 
+      <!-- Gráfico sesiones por mes -->
+      <section v-if="sesiones.length > 0" class="chart-section card">
+        <h2 class="section-title">Entrenamientos por mes</h2>
+        <SesionesChart :sesiones="sesiones" />
+      </section>
+
       <!-- Historial -->
       <section class="historial-section">
         <h2 class="section-title">Historial</h2>
@@ -85,6 +91,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { fetchSesiones } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import SesionesChart from '@/components/SesionesChart.vue';
 import type { SesionResumen } from '@/types';
 
 const router = useRouter();
@@ -207,6 +214,14 @@ onMounted(async () => {
   color: var(--text-muted);
 }
 
+/* ── Chart ───────────────────────────────────────────────────── */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
 /* ── Historial ───────────────────────────────────────────────── */
 .historial-section {
   display: flex;
@@ -311,5 +326,38 @@ onMounted(async () => {
   background: rgba(255, 59, 92, 0.08);
   border-color: rgba(255, 59, 92, 0.2);
   color: #ff6b87;
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .back-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .back-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .chip {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .chip-success {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.25);
+  color: #166534;
+}
+
+[data-theme="light"] .chip-warn {
+  background: rgba(180, 120, 0, 0.1);
+  border-color: rgba(180, 120, 0, 0.25);
+  color: #854d0e;
+}
+
+[data-theme="light"] .chip-low {
+  background: rgba(200, 30, 60, 0.08);
+  border-color: rgba(200, 30, 60, 0.2);
+  color: #9f1239;
 }
 </style>

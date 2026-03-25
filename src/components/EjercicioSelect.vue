@@ -143,33 +143,78 @@ function handleEnter() {
   flex: 1;
 }
 
+/* input lives in this component's template — parent scoped styles don't reach it */
+.form-input {
+  padding: 10px 14px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.55;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+[data-theme="light"] .form-input {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 768px) {
+  .form-input {
+    font-size: 16px;
+    min-height: 48px;
+  }
+}
+
 .ej-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   z-index: 100;
-  background: #0d0f12;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
   padding: 4px;
   margin: 0;
   list-style: none;
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-strong);
 }
 
 .ej-option {
-  padding: 8px 12px;
-  border-radius: 7px;
+  padding: 10px 12px;
+  min-height: 40px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   color: var(--text);
   transition: background var(--transition-fast);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
 .ej-option:hover,
@@ -189,5 +234,17 @@ function handleEnter() {
 
 .creando-text {
   opacity: 0.6;
+}
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .ej-dropdown {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .ej-option:hover,
+[data-theme="light"] .ej-option.active {
+  background: rgba(0, 0, 0, 0.05);
 }
 </style>

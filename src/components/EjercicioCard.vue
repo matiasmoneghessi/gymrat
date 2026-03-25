@@ -144,4 +144,21 @@ function goDetalle() {
   font-size: 11px;
   letter-spacing: 0.04em;
 }
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .ejercicio-card {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ejercicio-card:hover,
+[data-theme="light"] .ejercicio-card:focus-visible {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .metric-chip {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
 </style>

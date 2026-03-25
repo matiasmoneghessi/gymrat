@@ -504,4 +504,10 @@ function iniciarSesion(diaId: number) {
     gap: 6px;
   }
 }
+
+/* ── Light mode ──────────────────────────────────────────────── */
+[data-theme="light"] .semana-tab {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+}
 </style>
