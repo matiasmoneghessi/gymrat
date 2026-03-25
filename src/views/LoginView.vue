@@ -8,8 +8,7 @@
     <div class="login-wrap">
       <!-- Brand lockup -->
       <div class="login-brand">
-        <div class="login-brand-mark">GR</div>
-        <span class="login-brand-label">GYMRAT</span>
+        <img src="/logo.png" alt="GymRat logo" class="login-logo" />
       </div>
 
       <!-- Hero copy -->
@@ -198,29 +197,20 @@ onMounted(() => {
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.login-brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: conic-gradient(from 200deg, #ff7b4c, #ff3b5c, #ffb347, #ff7b4c);
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  font-size: 15px;
-  color: #050608;
-  box-shadow: 0 6px 24px rgba(255, 92, 43, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.login-brand-label {
-  font-family: 'Bebas Neue', system-ui;
-  font-size: 26px;
-  letter-spacing: 0.22em;
-  color: var(--text);
+.login-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 28px rgba(255, 92, 43, 0.45)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  transition: filter 300ms ease, transform 300ms ease;
+}
+
+.login-logo:hover {
+  filter: drop-shadow(0 10px 36px rgba(255, 92, 43, 0.6)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  transform: scale(1.04);
 }
 
 /* ── Hero copy ───────────────────────────────────────────────── */

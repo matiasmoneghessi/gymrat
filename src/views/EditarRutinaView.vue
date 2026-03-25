@@ -491,8 +491,10 @@ async function handleSubmit() {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  justify-content: flex-end;
 }
 .mini-field label {
+  height: 20px;
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -504,6 +506,7 @@ async function handleSubmit() {
   background: none;
   border: none;
   padding: 0;
+  line-height: 1;
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
