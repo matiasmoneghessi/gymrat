@@ -53,7 +53,31 @@
                 <span class="sesion-item-rutina">{{ s.rutinaNombre }}</span>
                 <span class="sesion-item-dia">S{{ s.semanaNumero }} · {{ s.diaNombre }}</span>
               </div>
-              <span class="sesion-item-fecha">{{ formatFecha(s.fecha) }}</span>
+              <div class="sesion-item-right">
+                <span class="sesion-item-fecha">{{ formatFecha(s.fecha) }}</span>
+                <button
+                  v-if="confirmingId !== s.id"
+                  class="btn-delete-sesion"
+                  :disabled="deletingId === s.id"
+                  @click="confirmingId = s.id"
+                  aria-label="Eliminar sesión"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
+                <div v-else class="delete-confirm-inline">
+                  <button class="btn-delete-cancel" @click="confirmingId = null">No</button>
+                  <button
+                    class="btn-delete-confirm"
+                    :disabled="deletingId === s.id"
+                    @click="borrarSesion(s.id)"
+                  >
+                    {{ deletingId === s.id ? '...' : 'Borrar' }}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="sesion-item-meta">
@@ -89,7 +113,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { fetchSesiones } from '@/services/api';
+import { fetchSesiones, deleteSesion } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import SesionesChart from '@/components/SesionesChart.vue';
 import type { SesionResumen } from '@/types';
@@ -100,6 +124,8 @@ const authStore = useAuthStore();
 const loading = ref(true);
 const error = ref('');
 const sesiones = ref<SesionResumen[]>([]);
+const deletingId = ref<number | null>(null);
+const confirmingId = ref<number | null>(null);
 
 const totalMinutos = computed(() => sesiones.value.reduce((sum, s) => sum + s.duracion_minutos, 0));
 
@@ -117,6 +143,21 @@ function formatFecha(fecha: string) {
     return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(fecha + 'T12:00:00'));
   } catch {
     return fecha;
+  }
+}
+
+async function borrarSesion(id: number) {
+  const token = authStore.session?.access_token;
+  if (!token) return;
+  deletingId.value = id;
+  try {
+    await deleteSesion(id, token);
+    sesiones.value = sesiones.value.filter((s) => s.id !== id);
+  } catch {
+    error.value = 'No se pudo eliminar la sesión.';
+  } finally {
+    deletingId.value = null;
+    confirmingId.value = null;
   }
 }
 
@@ -168,20 +209,28 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
   color: var(--text);
+}
+
+.back-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.back-btn:hover svg {
   transform: translateX(-2px);
 }
 
@@ -285,11 +334,101 @@ onMounted(async () => {
   letter-spacing: 0.1em;
 }
 
+.sesion-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .sesion-item-fecha {
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+.btn-delete-sesion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  opacity: 0.4;
   flex-shrink: 0;
+}
+
+.sesion-item:hover .btn-delete-sesion,
+.sesion-item:focus-within .btn-delete-sesion {
+  opacity: 1;
+}
+
+.btn-delete-sesion:hover:not(:disabled) {
+  color: #ff4d6d;
+  background: rgba(255, 59, 92, 0.1);
+  border-color: rgba(255, 59, 92, 0.2);
+}
+
+.btn-delete-sesion:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.delete-confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-delete-cancel {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-delete-cancel:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.btn-delete-confirm {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 59, 92, 0.35);
+  background: rgba(255, 59, 92, 0.12);
+  color: #ff4d6d;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn-delete-confirm:hover:not(:disabled) {
+  background: rgba(255, 59, 92, 0.22);
+  border-color: rgba(255, 59, 92, 0.5);
+}
+
+.btn-delete-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .sesion-item-meta {

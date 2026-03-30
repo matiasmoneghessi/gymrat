@@ -12,6 +12,7 @@ import type {
   SerieDetalle,
   CreateSesionInput,
   SesionResumen,
+  StravaStatus,
 } from '@/types';
 
 const api = axios.create({
@@ -211,4 +212,30 @@ export async function fetchSesiones(token: string): Promise<SesionResumen[]> {
     authHeaders(token),
   );
   return data.data;
+}
+
+export async function deleteSesion(sesionId: number, token: string): Promise<void> {
+  await api.delete(`/sesiones/${sesionId}`, authHeaders(token));
+}
+
+// ─── Strava ───────────────────────────────────────────────────────────────────
+
+export async function fetchStravaStatus(token: string): Promise<StravaStatus> {
+  const { data } = await api.get<{ success: boolean; data: StravaStatus }>(
+    '/strava/status',
+    authHeaders(token),
+  );
+  return data.data;
+}
+
+export async function fetchStravaConnectUrl(token: string): Promise<string> {
+  const { data } = await api.get<{ success: boolean; data: { url: string } }>(
+    '/strava/connect-url',
+    authHeaders(token),
+  );
+  return data.data.url;
+}
+
+export async function disconnectStrava(token: string): Promise<void> {
+  await api.delete('/strava/disconnect', authHeaders(token));
 }

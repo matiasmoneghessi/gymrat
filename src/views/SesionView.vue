@@ -104,6 +104,22 @@
 
     <!-- Botón finalizar bottom (mobile) -->
     <div v-if="!loading" class="bottom-actions">
+      <label v-if="stravaConnected" class="strava-sync-toggle" :class="{ active: syncStrava }">
+        <input type="checkbox" v-model="syncStrava" class="strava-sync-input" />
+        <div class="strava-sync-left">
+          <!-- Strava logo -->
+          <svg class="strava-logo-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+          </svg>
+          <div class="strava-sync-text">
+            <span class="strava-sync-label">Sincronizar con Strava</span>
+            <span class="strava-sync-sub">{{ syncStrava ? 'Se enviará al finalizar' : 'No se sincronizará' }}</span>
+          </div>
+        </div>
+        <div class="strava-toggle-track">
+          <div class="strava-toggle-thumb" />
+        </div>
+      </label>
       <button class="btn-finalizar-bottom" :disabled="saving" @click="finalizar">
         {{ saving ? 'Guardando...' : 'Finalizar sesión' }}
       </button>
@@ -112,11 +128,21 @@
     <!-- Modal cancelar -->
     <div v-if="showCancelar" class="overlay" @click.self="showCancelar = false">
       <div class="modal-card">
+        <div class="modal-danger-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </div>
         <p class="modal-title">¿Cancelar sesión?</p>
-        <p class="modal-sub">Se perderá el progreso no guardado.</p>
+        <p class="modal-sub">Se perderá todo el progreso de esta sesión. Esta acción no se puede deshacer.</p>
         <div class="modal-actions">
           <button class="btn-modal-secondary" @click="showCancelar = false">Seguir entrenando</button>
-          <button class="btn-modal-danger" @click="goBack">Cancelar sesión</button>
+          <button class="btn-modal-danger" @click="goBack">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+            Borrar sesión
+          </button>
         </div>
       </div>
     </div>
@@ -128,7 +154,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
-import { createSesion } from '@/services/api';
+import { createSesion, fetchStravaStatus } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 interface SerieForm {
@@ -158,6 +184,8 @@ const loading = ref(true);
 const error = ref('');
 const saving = ref(false);
 const showCancelar = ref(false);
+const stravaConnected = ref(false);
+const syncStrava = ref(false);
 const ejercicios = ref<EjercicioSesionForm[]>([]);
 const rutinaName = ref('');
 const diaNombre = ref('');
@@ -240,6 +268,7 @@ async function finalizar() {
             completada: s.completada,
           })),
         })),
+        sync_strava: syncStrava.value,
       },
       token,
     );
@@ -252,6 +281,14 @@ async function finalizar() {
 }
 
 onMounted(async () => {
+  // Verificar conexión con Strava (no bloquea la carga)
+  const token = authStore.session?.access_token;
+  if (token) {
+    fetchStravaStatus(token)
+      .then((s) => { stravaConnected.value = s.connected; })
+      .catch(() => {});
+  }
+
   // Asegurar que la rutina esté cargada
   if (!rutinaStore.rutinaActual || rutinaStore.rutinaActual.id !== rutinaId) {
     await rutinaStore.loadRutinaById(rutinaId);
@@ -609,6 +646,111 @@ onUnmounted(() => {
   color: var(--text);
 }
 
+/* ── Strava sync toggle ──────────────────────────────────────── */
+.strava-sync-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.strava-sync-toggle.active {
+  border-color: rgba(252, 76, 2, 0.3);
+  background: rgba(252, 76, 2, 0.06);
+}
+
+.strava-sync-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.strava-sync-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strava-logo-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+  transition: color var(--transition-fast);
+}
+
+.strava-sync-toggle.active .strava-logo-icon {
+  color: #fc4c02;
+}
+
+.strava-sync-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.strava-sync-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: color var(--transition-fast);
+}
+
+.strava-sync-toggle.active .strava-sync-label {
+  color: var(--text);
+}
+
+.strava-sync-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.strava-toggle-track {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.strava-sync-toggle.active .strava-toggle-track {
+  background: #fc4c02;
+  border-color: #fc4c02;
+}
+
+.strava-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.strava-sync-toggle.active .strava-toggle-thumb {
+  transform: translateX(18px);
+  background: #fff;
+}
+
 /* ── Bottom finalizar ────────────────────────────────────────── */
 .bottom-actions {
   position: fixed;
@@ -668,7 +810,20 @@ onUnmounted(() => {
   max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.modal-danger-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 59, 92, 0.12);
+  border: 1px solid rgba(255, 59, 92, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4d6d;
+  margin-bottom: 2px;
 }
 
 .modal-title {
@@ -681,17 +836,20 @@ onUnmounted(() => {
   margin: 0;
   font-size: 13px;
   color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .modal-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 4px;
 }
 
 .btn-modal-secondary {
-  flex: 1;
-  padding: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px;
   border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: transparent;
@@ -701,30 +859,44 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
 }
 
 .btn-modal-danger {
-  flex: 1;
-  padding: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 59, 92, 0.3);
-  background: rgba(255, 59, 92, 0.1);
-  color: #ff6b87;
-  font-size: 12px;
+  border: 1px solid rgba(255, 59, 92, 0.4);
+  background: rgba(255, 59, 92, 0.14);
+  color: #ff4d6d;
+  font-size: 13px;
   font-family: inherit;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .btn-modal-danger:hover {
-  background: rgba(255, 59, 92, 0.18);
+  background: rgba(255, 59, 92, 0.26);
+  border-color: rgba(255, 59, 92, 0.6);
+  box-shadow: 0 0 16px rgba(255, 59, 92, 0.18);
+}
+
+.btn-modal-danger:active {
+  background: rgba(255, 59, 92, 0.35);
+  transform: scale(0.98);
 }
 
 /* ── Mobile ──────────────────────────────────────────────────── */
@@ -777,6 +949,30 @@ onUnmounted(() => {
   border-top-color: rgba(0, 0, 0, 0.08);
 }
 
+[data-theme="light"] .strava-sync-toggle {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .strava-sync-toggle.active {
+  border-color: rgba(252, 76, 2, 0.25);
+  background: rgba(252, 76, 2, 0.05);
+}
+
+[data-theme="light"] .strava-logo-icon {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .strava-toggle-track {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .strava-toggle-thumb {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
 [data-theme="light"] .btn-finalizar-bottom {
   background: linear-gradient(120deg, rgba(255, 92, 43, 0.18), rgba(255, 255, 255, 0.9));
 }
@@ -785,11 +981,30 @@ onUnmounted(() => {
   border-color: rgba(0, 0, 0, 0.1);
 }
 
+[data-theme="light"] .modal-danger-icon {
+  background: rgba(220, 38, 60, 0.08);
+  border-color: rgba(220, 38, 60, 0.15);
+  color: #dc2626;
+}
+
 [data-theme="light"] .btn-modal-secondary {
   border-color: rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="light"] .btn-modal-secondary:hover {
   background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+[data-theme="light"] .btn-modal-danger {
+  background: rgba(220, 38, 60, 0.08);
+  border-color: rgba(220, 38, 60, 0.3);
+  color: #dc2626;
+}
+
+[data-theme="light"] .btn-modal-danger:hover {
+  background: rgba(220, 38, 60, 0.15);
+  border-color: rgba(220, 38, 60, 0.5);
+  box-shadow: 0 0 16px rgba(220, 38, 60, 0.12);
 }
 </style>

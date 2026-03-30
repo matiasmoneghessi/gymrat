@@ -122,7 +122,7 @@ function goDetalle() {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border-radius: var(--radius-pill);
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }

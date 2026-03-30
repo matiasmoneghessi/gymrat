@@ -10,6 +10,7 @@
       </div>
       <nav class="app-nav">
         <RouterLink to="/" class="nav-link">Rutinas</RouterLink>
+        <RouterLink to="/strava" class="nav-link">Strava</RouterLink>
         <ThemeToggle />
         <button class="btn-signout" @click="authStore.signOut()">Salir</button>
       </nav>
@@ -36,6 +37,12 @@
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span>Rutinas</span>
+      </RouterLink>
+      <RouterLink to="/strava" class="mobile-nav-item" aria-label="Strava">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>Strava</span>
       </RouterLink>
       <ThemeToggle class="mobile-nav-item mobile-theme-toggle" />
       <button class="mobile-nav-item" @click="authStore.signOut()" aria-label="Cerrar sesión">

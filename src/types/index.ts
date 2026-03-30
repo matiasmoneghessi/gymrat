@@ -146,6 +146,12 @@ export interface CreateSesionInput {
   fecha: string;
   duracion_minutos: number;
   ejercicios: SesionEjercicioInput[];
+  sync_strava?: boolean;
+}
+
+export interface StravaStatus {
+  connected: boolean;
+  athleteId?: number;
 }
 
 export interface SesionResumen {
