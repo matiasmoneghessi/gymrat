@@ -2,18 +2,21 @@
   <div class="app-shell">
     <header v-if="!isLoginRoute" class="app-header">
       <div class="brand">
-        <span class="brand-mark">{{ iniciales || '—' }}</span>
+        <img src="/icon-512.png" class="brand-rat-logo" alt="" aria-hidden="true" />
         <div class="brand-text">
           <h1>THE GymRat</h1>
           <p>Rutinas de gimnasio afinadas al milímetro</p>
         </div>
       </div>
-      <nav class="app-nav">
-        <RouterLink to="/" class="nav-link">Rutinas</RouterLink>
-        <RouterLink to="/strava" class="nav-link">Strava</RouterLink>
-        <ThemeToggle />
-        <button class="btn-signout" @click="authStore.signOut()">Salir</button>
-      </nav>
+      <div class="header-right">
+        <nav class="app-nav">
+          <RouterLink to="/" class="nav-link">Rutinas</RouterLink>
+          <RouterLink to="/strava" class="nav-link">Strava</RouterLink>
+          <ThemeToggle />
+          <button class="btn-signout" @click="authStore.signOut()">Salir</button>
+        </nav>
+        <span class="brand-mark" aria-label="Usuario">{{ iniciales || '—' }}</span>
+      </div>
     </header>
 
     <main class="app-main">

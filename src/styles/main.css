@@ -132,7 +132,13 @@ button {
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .brand-mark {
@@ -148,6 +154,13 @@ button {
   font-size: 14px;
   color: #050608;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+}
+
+.brand-rat-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brand-text h1 {
@@ -293,21 +306,33 @@ button {
 }
 
 .back-btn {
-  border: none;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  padding: 8px 2px;
   cursor: pointer;
-  font-family: inherit;
-  transition: color var(--transition-med), transform var(--transition-med);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .back-btn:hover {
-  color: var(--accent-strong);
-  transform: translateX(-3px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text);
+}
+
+.back-btn:hover svg {
+  transform: translateX(-2px);
+  transition: transform var(--transition-fast);
+}
+
+.back-btn svg {
+  transition: transform var(--transition-fast);
 }
 
 .rutina-header {
@@ -381,6 +406,11 @@ button {
     font-size: 12px;
   }
 
+  .brand-rat-logo {
+    width: 40px;
+    height: 40px;
+  }
+
   .brand-text h1 {
     font-size: 18px;
   }
@@ -410,10 +440,8 @@ button {
   }
 
   .back-btn {
-    font-size: 12px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
+    width: 40px;
+    height: 40px;
   }
 
   /* ── Bottom Navigation Bar ────────────────────────────── */
