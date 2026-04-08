@@ -150,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
@@ -202,6 +202,58 @@ const timerDisplay = computed(() => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
 
+// Ejercicio actual (primero sin completar, para el lock screen)
+const ejercicioActual = computed(() =>
+  ejercicios.value.find((ej) => !ejCompletado(ej))?.nombre
+  ?? ejercicios.value[ejercicios.value.length - 1]?.nombre
+  ?? 'GymRat'
+);
+
+// ── Lock screen (Media Session API) ──────────────────────────────
+let audioCtx: AudioContext | null = null;
+let silentSource: AudioBufferSourceNode | null = null;
+
+function startSilentAudio() {
+  try {
+    audioCtx = new AudioContext();
+    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.001;
+    silentSource = audioCtx.createBufferSource();
+    silentSource.buffer = buffer;
+    silentSource.loop = true;
+    silentSource.connect(gain);
+    gain.connect(audioCtx.destination);
+    silentSource.start();
+  } catch {
+    // Browser may block AudioContext without user gesture; silently ignore
+  }
+}
+
+function stopSilentAudio() {
+  try { silentSource?.stop(); } catch { /* already stopped */ }
+  try { audioCtx?.close(); } catch { /* already closed */ }
+  audioCtx = null;
+  silentSource = null;
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const mins = Math.floor(elapsed.value / 60);
+  const secs = elapsed.value % 60;
+  const timer = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: ejercicioActual.value,
+    artist: `${timer}  ·  ${seriesCompletadas.value}/${seriesTotales.value} series`,
+    album: `${rutinaName.value} · ${diaNombre.value}`,
+    artwork: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  });
+  navigator.mediaSession.playbackState = 'playing';
+}
+
 // Progreso
 const seriesTotales = computed(() => ejercicios.value.reduce((sum, e) => sum + e.series.length, 0));
 const seriesCompletadas = computed(() => ejercicios.value.reduce((sum, e) => sum + e.series.filter((s) => s.completada).length, 0));
@@ -247,6 +299,8 @@ async function finalizar() {
 
   saving.value = true;
   if (timerInterval) clearInterval(timerInterval);
+  stopSilentAudio();
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 
   const duracion = Math.round(elapsed.value / 60);
 
@@ -276,7 +330,8 @@ async function finalizar() {
   } catch {
     error.value = 'No se pudo guardar la sesión. Intentá de nuevo.';
     saving.value = false;
-    timerInterval = setInterval(() => { elapsed.value++; }, 1000);
+    startSilentAudio();
+    timerInterval = setInterval(() => { elapsed.value++; updateMediaSession(); }, 1000);
   }
 }
 
@@ -349,11 +404,17 @@ onMounted(async () => {
 
   // Iniciar timer
   startTime.value = Date.now();
-  timerInterval = setInterval(() => { elapsed.value++; }, 1000);
+  startSilentAudio();
+  updateMediaSession();
+  timerInterval = setInterval(() => { elapsed.value++; updateMediaSession(); }, 1000);
+
+  watch(ejercicioActual, () => updateMediaSession());
 });
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
+  stopSilentAudio();
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 });
 </script>
 
