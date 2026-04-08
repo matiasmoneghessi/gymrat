@@ -125,6 +125,25 @@
       </button>
     </div>
 
+    <!-- Modal límite de tiempo -->
+    <div v-if="showLimite" class="overlay">
+      <div class="modal-card">
+        <div class="modal-warn-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="modal-title">Sesión muy larga</p>
+        <p class="modal-sub">Llevás más de {{ LIMITE_MINUTOS }} minutos entrenando. ¿Querés finalizar?</p>
+        <div class="modal-actions">
+          <button class="btn-modal-secondary" @click="showLimite = false">Seguir entrenando</button>
+          <button class="btn-finalizar-bottom" :disabled="saving" @click="finalizar">
+            {{ saving ? 'Guardando...' : 'Finalizar sesión' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal cancelar -->
     <div v-if="showCancelar" class="overlay" @click.self="showCancelar = false">
       <div class="modal-card">
@@ -150,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
@@ -180,10 +199,14 @@ const rutinaId = Number(route.query.rutinaId);
 const semanaId = Number(route.query.semanaId);
 const diaId = Number(route.query.diaId);
 
+const LIMITE_MINUTOS = 180; // 3 horas
+const LIMITE_SEGUNDOS = LIMITE_MINUTOS * 60;
+
 const loading = ref(true);
 const error = ref('');
 const saving = ref(false);
 const showCancelar = ref(false);
+const showLimite = ref(false);
 const stravaConnected = ref(false);
 const syncStrava = ref(false);
 const ejercicios = ref<EjercicioSesionForm[]>([]);
@@ -201,6 +224,70 @@ const timerDisplay = computed(() => {
   const secs = elapsed.value % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
+
+// Ejercicio actual (primero sin completar, para el lock screen)
+const ejercicioActual = computed(() =>
+  ejercicios.value.find((ej) => !ejCompletado(ej))?.nombre
+  ?? ejercicios.value[ejercicios.value.length - 1]?.nombre
+  ?? 'GymRat'
+);
+
+// Recalcula el tiempo basándose en el timestamp real (funciona con celular bloqueado)
+function recalcularElapsed() {
+  elapsed.value = Math.floor((Date.now() - startTime.value) / 1000);
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    recalcularElapsed();
+    updateMediaSession();
+  }
+}
+
+// ── Lock screen (Media Session API) ──────────────────────────────
+let audioCtx: AudioContext | null = null;
+let silentSource: AudioBufferSourceNode | null = null;
+
+function startSilentAudio() {
+  try {
+    audioCtx = new AudioContext();
+    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.001;
+    silentSource = audioCtx.createBufferSource();
+    silentSource.buffer = buffer;
+    silentSource.loop = true;
+    silentSource.connect(gain);
+    gain.connect(audioCtx.destination);
+    silentSource.start();
+  } catch {
+    // Browser may block AudioContext without user gesture; silently ignore
+  }
+}
+
+function stopSilentAudio() {
+  try { silentSource?.stop(); } catch { /* already stopped */ }
+  try { audioCtx?.close(); } catch { /* already closed */ }
+  audioCtx = null;
+  silentSource = null;
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const mins = Math.floor(elapsed.value / 60);
+  const secs = elapsed.value % 60;
+  const timer = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: ejercicioActual.value,
+    artist: `${timer}  ·  ${seriesCompletadas.value}/${seriesTotales.value} series`,
+    album: `${rutinaName.value} · ${diaNombre.value}`,
+    artwork: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  });
+  navigator.mediaSession.playbackState = 'playing';
+}
 
 // Progreso
 const seriesTotales = computed(() => ejercicios.value.reduce((sum, e) => sum + e.series.length, 0));
@@ -247,6 +334,8 @@ async function finalizar() {
 
   saving.value = true;
   if (timerInterval) clearInterval(timerInterval);
+  stopSilentAudio();
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 
   const duracion = Math.round(elapsed.value / 60);
 
@@ -276,7 +365,14 @@ async function finalizar() {
   } catch {
     error.value = 'No se pudo guardar la sesión. Intentá de nuevo.';
     saving.value = false;
-    timerInterval = setInterval(() => { elapsed.value++; }, 1000);
+    startSilentAudio();
+    timerInterval = setInterval(() => {
+      recalcularElapsed();
+      if (!showLimite.value && elapsed.value >= LIMITE_SEGUNDOS) {
+        showLimite.value = true;
+      }
+      updateMediaSession();
+    }, 1000);
   }
 }
 
@@ -349,11 +445,25 @@ onMounted(async () => {
 
   // Iniciar timer
   startTime.value = Date.now();
-  timerInterval = setInterval(() => { elapsed.value++; }, 1000);
+  startSilentAudio();
+  updateMediaSession();
+  timerInterval = setInterval(() => {
+    recalcularElapsed();
+    if (!showLimite.value && elapsed.value >= LIMITE_SEGUNDOS) {
+      showLimite.value = true;
+    }
+    updateMediaSession();
+  }, 1000);
+
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  watch(ejercicioActual, () => updateMediaSession());
 });
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  stopSilentAudio();
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 });
 </script>
 
@@ -823,6 +933,19 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: #ff4d6d;
+  margin-bottom: 2px;
+}
+
+.modal-warn-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffaa00;
   margin-bottom: 2px;
 }
 
