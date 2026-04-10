@@ -253,13 +253,15 @@ function startSilentAudio() {
     audioCtx = new AudioContext();
     const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
     const gain = audioCtx.createGain();
-    gain.gain.value = 0.001;
+    gain.gain.value = 0.01;
     silentSource = audioCtx.createBufferSource();
     silentSource.buffer = buffer;
     silentSource.loop = true;
     silentSource.connect(gain);
     gain.connect(audioCtx.destination);
     silentSource.start();
+    // iOS Safari starts AudioContext in suspended state — must resume explicitly
+    audioCtx.resume();
   } catch {
     // Browser may block AudioContext without user gesture; silently ignore
   }
