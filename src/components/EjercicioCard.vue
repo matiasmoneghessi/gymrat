@@ -12,19 +12,10 @@
     </div>
 
     <div class="ejercicio-metrics">
-      <!-- Kg: por serie si varían, único si son iguales -->
-      <template v-if="kgsVariables.length > 0">
-        <span class="metric-chip kg-chip-variable">
-          <span class="metric-chip-label">Kg</span>
-          <span class="metric-chip-value kg-series">{{ kgsVariables.join(' / ') }}</span>
-        </span>
-      </template>
-      <template v-else>
-        <span class="metric-chip">
-          <span class="metric-chip-label">Kg</span>
-          <span class="metric-chip-value">{{ serie?.kg ?? '—' }}</span>
-        </span>
-      </template>
+      <span class="metric-chip">
+        <span class="metric-chip-label">Kg</span>
+        <span class="metric-chip-value">{{ maxKg }}</span>
+      </span>
 
       <span class="metric-chip">
         <span class="metric-chip-label">{{ serie?.tipo_reps === 'seg' ? 'Seg' : 'Reps' }}</span>
@@ -50,14 +41,14 @@ const props = defineProps<{
 
 const router = useRouter();
 
-// Muestra los kg individuales si hay serieDetalles con valores distintos entre sí
-const kgsVariables = computed(() => {
+// Muestra el kg máximo de serieDetalles, o el kg base si no hay detalles
+const maxKg = computed(() => {
   const detalles = props.serie?.serieDetalles;
-  if (!detalles || detalles.length === 0) return [];
-  const kgs = detalles.map((d) => d.kg ?? '—');
-  // Si todos los valores son iguales, no necesitamos mostrarlos por separado
-  const allSame = kgs.every((k) => k === kgs[0]);
-  return allSame ? [] : kgs.map(String);
+  if (detalles && detalles.length > 0) {
+    const validos = detalles.map((d) => d.kg).filter((k): k is number => k !== null);
+    if (validos.length > 0) return Math.max(...validos);
+  }
+  return props.serie?.kg ?? '—';
 });
 
 function goDetalle() {
@@ -138,11 +129,6 @@ function goDetalle() {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
-}
-
-.kg-chip-variable .metric-chip-value.kg-series {
-  font-size: 11px;
-  letter-spacing: 0.04em;
 }
 
 /* ── Light mode ──────────────────────────────────────────────── */
