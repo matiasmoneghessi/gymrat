@@ -116,7 +116,7 @@
                   <div class="form-row">
                     <div class="form-group flex-1">
                       <label class="form-label">Nombre</label>
-                      <EjercicioSelect v-model="ej.nombre" />
+                      <EjercicioSelect v-model="ej.catalogoEjercicioId" />
                     </div>
                     <div class="form-group">
                       <label class="form-label">Código (opcional)</label>
@@ -176,7 +176,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import EjercicioSelect from '@/components/EjercicioSelect.vue';
 
 interface FormEjercicio {
-  nombre: string;
+  catalogoEjercicioId: number;
   codigo: string;
   kg: number | null;
   reps: number;
@@ -213,7 +213,7 @@ function validateForm(): string | null {
   for (const [sIdx, semana] of form.semanas.entries()) {
     for (const [dIdx, dia] of semana.dias.entries()) {
       for (const [eIdx, ej] of dia.ejercicios.entries()) {
-        if (!ej.nombre.trim()) return `Falta el nombre del ejercicio ${eIdx + 1} en día ${dIdx + 1}, semana ${sIdx + 1}.`;
+        if (!ej.catalogoEjercicioId) return `Falta seleccionar el ejercicio ${eIdx + 1} en día ${dIdx + 1}, semana ${sIdx + 1}.`;
       }
     }
   }
@@ -226,7 +226,7 @@ const form = reactive({
 });
 
 function makeEjercicio(): FormEjercicio {
-  return { nombre: '', codigo: '', kg: null, reps: 0, series: 0, tipo_reps: 'reps' };
+  return { catalogoEjercicioId: 0, codigo: '', kg: null, reps: 0, series: 0, tipo_reps: 'reps' };
 }
 
 function makeDia(): FormDia {
@@ -292,7 +292,7 @@ onMounted(async () => {
       ejercicios: dia.ejercicios.map((ej) => {
         const es = ej.ejercicioSemanas.find((x) => x.semanaId === semana.id);
         return {
-          nombre: ej.nombre,
+          catalogoEjercicioId: ej.catalogoEjercicioId,
           codigo: ej.codigo ?? '',
           kg: es?.kg ?? null,
           reps: es?.reps ?? 0,
@@ -324,7 +324,7 @@ async function handleSubmit() {
           movilidad: d.movilidad.trim() || null,
           activacion: d.activacion.trim() || null,
           ejercicios: d.ejercicios.map((ej) => ({
-            nombre: ej.nombre.trim() || 'Ejercicio',
+            catalogoEjercicioId: ej.catalogoEjercicioId,
             codigo: ej.codigo.trim() || null,
             ejercicioSemanas: [{ semanaNumero: sIdx + 1, kg: ej.kg, reps: ej.reps || 0, series: ej.series || 0, tipo_reps: ej.tipo_reps }],
           })),

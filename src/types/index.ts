@@ -27,10 +27,10 @@ export interface Usuario {
 
 export interface Ejercicio {
   id: number;
-  nombre: string;
   codigo?: string | null;
   diaId: number;
-  catalogoEjercicioId?: number | null;
+  catalogoEjercicioId: number;
+  catalogoEjercicio: EjercicioCatalogo;
   ejercicioSemanas: EjercicioSemana[];
 }
 
@@ -82,7 +82,7 @@ export interface CreateEjercicioSemanaInput {
 }
 
 export interface CreateEjercicioInput {
-  nombre: string;
+  catalogoEjercicioId: number;
   codigo?: string | null;
   ejercicioSemanas: CreateEjercicioSemanaInput[];
 }

@@ -2,7 +2,7 @@
   <div class="ejercicio-card" role="button" tabindex="0" @click="goDetalle" @keydown.enter="goDetalle">
     <div class="ejercicio-row">
       <div class="ejercicio-name">
-        <h3>{{ ejercicio.nombre }}</h3>
+        <h3>{{ ejercicio.catalogoEjercicio?.nombre ?? 'Ejercicio' }}</h3>
         <span v-if="ejercicio.codigo" class="pill pill-subtle">{{ ejercicio.codigo }}</span>
       </div>
       <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"

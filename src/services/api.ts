@@ -168,7 +168,7 @@ export interface ImportarRutinaResult {
       movilidad: string | null;
       activacion: string | null;
       ejercicios: {
-        nombre: string;
+        catalogoEjercicioId: number;
         codigo: string | null;
         kg: number | null;
         reps: number;

@@ -8,7 +8,7 @@
       placeholder="Ej: Press banca"
       autocomplete="off"
       @focus="open = true"
-      @input="open = true; cursor = canCreate ? 0 : 0"
+      @input="open = true; cursor = 0"
       @keydown.escape.prevent="close"
       @keydown.enter.prevent="handleEnter"
       @keydown.down.prevent="moveCursor(1)"
@@ -30,7 +30,7 @@
         :key="ej.id"
         class="ej-option"
         :class="{ active: cursor === (canCreate ? i + 1 : i) }"
-        @mousedown.prevent="select(ej.nombre)"
+        @mousedown.prevent="select(ej)"
       >
         {{ ej.nombre }}
       </li>
@@ -41,9 +41,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useEjerciciosStore } from '@/stores/ejercicios';
+import type { EjercicioCatalogo } from '@/types';
 
-const props = defineProps<{ modelValue: string }>();
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+const props = defineProps<{ modelValue: number }>();
+const emit = defineEmits<{ 'update:modelValue': [value: number] }>();
 
 const store = useEjerciciosStore();
 const containerRef = ref<HTMLElement | null>(null);
@@ -51,16 +52,32 @@ const inputRef = ref<HTMLInputElement | null>(null);
 const open = ref(false);
 const cursor = ref(0);
 const creando = ref(false);
-const search = ref(props.modelValue);
+const search = ref('');
 
-watch(() => props.modelValue, (val) => {
-  if (val !== search.value) search.value = val;
-});
+// Sincronizar el texto del input con el nombre del ejercicio seleccionado
+watch(
+  () => props.modelValue,
+  (id) => {
+    if (!id) {
+      search.value = '';
+      return;
+    }
+    const found = store.ejercicios.find((e) => e.id === id);
+    if (found) search.value = found.nombre;
+  },
+  { immediate: true },
+);
 
-watch(search, (val) => {
-  emit('update:modelValue', val);
-  cursor.value = 0;
-});
+// Cuando el store carga, intentar resolver el nombre si ya tenemos ID pero sin nombre aún
+watch(
+  () => store.ejercicios,
+  () => {
+    if (props.modelValue && !search.value) {
+      const found = store.ejercicios.find((e) => e.id === props.modelValue);
+      if (found) search.value = found.nombre;
+    }
+  },
+);
 
 onMounted(() => {
   store.loadEjercicios();
@@ -74,6 +91,11 @@ onUnmounted(() => {
 function onClickOutside(e: MouseEvent) {
   if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
     open.value = false;
+    // Si el usuario escribió algo pero no seleccionó, restaurar el nombre del ejercicio actual
+    if (props.modelValue) {
+      const found = store.ejercicios.find((e) => e.id === props.modelValue);
+      if (found) search.value = found.nombre;
+    }
   }
 }
 
@@ -95,9 +117,9 @@ function close() {
   open.value = false;
 }
 
-function select(nombre: string) {
-  search.value = nombre;
-  emit('update:modelValue', nombre);
+function select(ej: EjercicioCatalogo) {
+  search.value = ej.nombre;
+  emit('update:modelValue', ej.id);
   open.value = false;
 }
 
@@ -107,9 +129,8 @@ async function crear() {
   creando.value = true;
   try {
     const nuevo = await store.crearEjercicio(nombre);
-    select(nuevo.nombre);
+    select(nuevo);
   } catch {
-    // Si falla la creación, al menos queda el texto escrito
     open.value = false;
   } finally {
     creando.value = false;
@@ -131,7 +152,7 @@ function handleEnter() {
   } else {
     const idx = canCreate.value ? cursor.value - 1 : cursor.value;
     if (filtered.value[idx]) {
-      select(filtered.value[idx].nombre);
+      select(filtered.value[idx]);
     }
   }
 }

@@ -104,7 +104,7 @@
 
     <!-- Botón finalizar bottom (mobile) -->
     <div v-if="!loading" class="bottom-actions">
-      <label v-if="stravaConnected" class="strava-sync-toggle" :class="{ active: syncStrava }">
+      <label v-if="STRAVA_ENABLED && stravaConnected" class="strava-sync-toggle" :class="{ active: syncStrava }">
         <input type="checkbox" v-model="syncStrava" class="strava-sync-input" />
         <div class="strava-sync-left">
           <!-- Strava logo -->
@@ -174,6 +174,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
 import { createSesion, fetchStravaStatus } from '@/services/api';
+import { STRAVA_ENABLED } from '@/config/features';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 interface SerieForm {
@@ -359,7 +360,7 @@ async function finalizar() {
             completada: s.completada,
           })),
         })),
-        sync_strava: syncStrava.value,
+        sync_strava: STRAVA_ENABLED && syncStrava.value,
       },
       token,
     );
@@ -379,12 +380,13 @@ async function finalizar() {
 }
 
 onMounted(async () => {
-  // Verificar conexión con Strava (no bloquea la carga)
-  const token = authStore.session?.access_token;
-  if (token) {
-    fetchStravaStatus(token)
-      .then((s) => { stravaConnected.value = s.connected; })
-      .catch(() => {});
+  if (STRAVA_ENABLED) {
+    const token = authStore.session?.access_token;
+    if (token) {
+      fetchStravaStatus(token)
+        .then((s) => { stravaConnected.value = s.connected; })
+        .catch(() => {});
+    }
   }
 
   // Asegurar que la rutina esté cargada
@@ -437,7 +439,7 @@ onMounted(async () => {
 
     return {
       ejercicioId: ej.id,
-      nombre: ej.nombre,
+      nombre: ej.catalogoEjercicio?.nombre ?? 'Ejercicio',
       codigo: ej.codigo ?? null,
       series,
     };

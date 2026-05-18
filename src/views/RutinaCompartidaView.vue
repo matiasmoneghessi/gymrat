@@ -50,7 +50,7 @@
               <p class="dia-nombre">Día {{ dia.numero }} — {{ dia.nombre }}</p>
               <ul class="ejercicios-list">
                 <li v-for="ej in dia.ejercicios" :key="ej.id" class="ejercicio-item">
-                  {{ ej.nombre }}
+                  {{ ej.catalogoEjercicio?.nombre }}
                   <span v-if="ej.codigo" class="pill pill-subtle">{{ ej.codigo }}</span>
                 </li>
               </ul>
