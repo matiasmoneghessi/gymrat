@@ -112,8 +112,8 @@ export interface ShareTokenResponse {
 export interface EjercicioCatalogo {
   id: number;
   nombre: string;
-  imagen_url?: string | null;
-  video_url?: string | null;
+  imagen?: string | null;
+  video?: string | null;
 }
 
 export interface EjercicioDetalle {

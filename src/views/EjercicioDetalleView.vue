@@ -13,33 +13,13 @@
     <p v-if="error" class="error-banner">{{ error }}</p>
 
     <template v-if="ejercicio && !loading">
-      <!-- Catálogo: imagen y video -->
-      <div v-if="ejercicio.catalogoEjercicio" class="catalogo-media">
-        <div v-if="ejercicio.catalogoEjercicio.imagen_url" class="media-block">
+      <!-- Catálogo: imagen -->
+      <div v-if="ejercicio.catalogoEjercicio?.imagen" class="catalogo-media">
+        <div class="media-block">
           <img
-            :src="ejercicio.catalogoEjercicio.imagen_url"
+            :src="ejercicio.catalogoEjercicio.imagen"
             :alt="ejercicio.catalogoEjercicio.nombre"
             class="ej-imagen"
-          />
-        </div>
-
-        <div v-if="ejercicio.catalogoEjercicio.video_url" class="media-block">
-          <!-- YouTube embed -->
-          <iframe
-            v-if="isYoutube(ejercicio.catalogoEjercicio.video_url)"
-            :src="youtubeEmbed(ejercicio.catalogoEjercicio.video_url)"
-            class="ej-video"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          />
-          <!-- Video directo -->
-          <video
-            v-else
-            :src="ejercicio.catalogoEjercicio.video_url"
-            class="ej-video"
-            controls
-            playsinline
           />
         </div>
       </div>
@@ -51,7 +31,7 @@
       </section>
 
       <!-- Serie detalles por semana -->
-      <section v-for="es in ejercicio.ejercicioSemanas" :key="es.id" class="semana-section card">
+      <section v-for="(es, idx) in ejercicio.ejercicioSemanas" :key="es.id" class="semana-section card">
         <div class="semana-header">
           <span class="pill">Semana {{ semanaNumero(es.semanaId) }}</span>
           <div class="semana-meta">
@@ -65,7 +45,6 @@
             </span>
           </div>
         </div>
-
         <!-- Series con kg editable -->
         <div class="series-grid">
           <div
@@ -86,7 +65,6 @@
             </div>
           </div>
         </div>
-
         <button
           type="button"
           class="btn-save"
@@ -97,6 +75,23 @@
         </button>
         <p v-if="saveError[es.id]" class="error-inline">{{ saveError[es.id] }}</p>
         <p v-if="saveOk[es.id]" class="success-inline">Guardado</p>
+        <div v-if="idx === 0 && ejercicio.catalogoEjercicio?.video" class="media-block">
+          <iframe
+            v-if="isYoutube(ejercicio.catalogoEjercicio.video)"
+            :src="youtubeEmbed(ejercicio.catalogoEjercicio.video)"
+            class="ej-video"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          />
+          <video
+            v-else
+            :src="ejercicio.catalogoEjercicio.video"
+            class="ej-video"
+            controls
+            playsinline
+          />
+        </div>
       </section>
     </template>
   </section>
@@ -150,7 +145,9 @@ function isYoutube(url: string) {
 }
 
 function youtubeEmbed(url: string) {
-  const match = url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&?/]+)/,
+  );
   const videoId = match?.[1];
   return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
 }
