@@ -118,7 +118,7 @@ export async function cloneRutinaFromToken(shareToken: string, token: string): P
 
 export async function fetchEjercicios(token: string): Promise<EjercicioCatalogo[]> {
   const { data } = await api.get<{ success: boolean; data: EjercicioCatalogo[] }>(
-    '/ejercicios',
+    '/catalogo-ejercicios',
     authHeaders(token),
   );
   return data.data;
@@ -126,7 +126,7 @@ export async function fetchEjercicios(token: string): Promise<EjercicioCatalogo[
 
 export async function createEjercicioCatalogo(nombre: string, token: string): Promise<EjercicioCatalogo> {
   const { data } = await api.post<{ success: boolean; data: EjercicioCatalogo }>(
-    '/ejercicios',
+    '/catalogo-ejercicios',
     { nombre },
     authHeaders(token),
   );
