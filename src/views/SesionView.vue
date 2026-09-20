@@ -125,6 +125,8 @@
       </button>
     </div>
 
+    <audio ref="silentAudioEl" loop playsinline style="display: none" />
+
     <!-- Modal límite de tiempo -->
     <div v-if="showLimite" class="overlay">
       <div class="modal-card">
@@ -170,7 +172,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRutinaStore } from '@/stores/rutina';
 import { createSesion, fetchStravaStatus } from '@/services/api';
@@ -203,6 +205,14 @@ const diaId = Number(route.query.diaId);
 const LIMITE_MINUTOS = 180; // 3 horas
 const LIMITE_SEGUNDOS = LIMITE_MINUTOS * 60;
 
+const STORAGE_KEY = 'gymrat:sesion-activa';
+const MAX_RESUME_AGE_MS = 24 * 60 * 60 * 1000; // no restaurar sesiones abandonadas hace más de 24h
+
+// WAV silencioso de 0.1s (8kHz, 8-bit mono), reproducido en loop — necesario para
+// que iOS reconozca la sesión como "media playback" real y muestre el lock screen player
+const SILENT_AUDIO_SRC =
+  'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+
 const loading = ref(true);
 const error = ref('');
 const saving = ref(false);
@@ -219,6 +229,7 @@ const semanaNumero = ref(0);
 const startTime = ref(Date.now());
 const elapsed = ref(0);
 let timerInterval: ReturnType<typeof setInterval> | null = null;
+let forceLeave = false;
 
 const timerDisplay = computed(() => {
   const mins = Math.floor(elapsed.value / 60);
@@ -242,37 +253,43 @@ function onVisibilityChange() {
   if (document.visibilityState === 'visible') {
     recalcularElapsed();
     updateMediaSession();
+    requestWakeLock();
+  } else {
+    guardarSesion();
   }
 }
 
-// ── Lock screen (Media Session API) ──────────────────────────────
-let audioCtx: AudioContext | null = null;
-let silentSource: AudioBufferSourceNode | null = null;
+// ── Lock screen (Media Session API + elemento <audio> real) ─────
+const silentAudioEl = ref<HTMLAudioElement | null>(null);
 
 function startSilentAudio() {
-  try {
-    audioCtx = new AudioContext();
-    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0.01;
-    silentSource = audioCtx.createBufferSource();
-    silentSource.buffer = buffer;
-    silentSource.loop = true;
-    silentSource.connect(gain);
-    gain.connect(audioCtx.destination);
-    silentSource.start();
-    // iOS Safari starts AudioContext in suspended state — must resume explicitly
-    audioCtx.resume();
-  } catch {
-    // Browser may block AudioContext without user gesture; silently ignore
-  }
+  const el = silentAudioEl.value;
+  if (!el) return;
+  el.play().catch(() => {
+    // Puede requerir gesto del usuario; se reintenta en el próximo play/toggle
+  });
 }
 
 function stopSilentAudio() {
-  try { silentSource?.stop(); } catch { /* already stopped */ }
-  try { audioCtx?.close(); } catch { /* already closed */ }
-  audioCtx = null;
-  silentSource = null;
+  silentAudioEl.value?.pause();
+}
+
+// ── Wake Lock (evita que se bloquee la pantalla mientras hay una sesión activa) ──
+const wakeLock = ref<WakeLockSentinel | null>(null);
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock.value = await (navigator as Navigator & { wakeLock: WakeLock }).wakeLock.request('screen');
+    }
+  } catch {
+    // No soportado o permiso denegado — se ignora, el <audio>+MediaSession siguen activos
+  }
+}
+
+function releaseWakeLock() {
+  wakeLock.value?.release().catch(() => {});
+  wakeLock.value = null;
 }
 
 function updateMediaSession() {
@@ -327,9 +344,63 @@ function confirmarCancelar() {
   showCancelar.value = true;
 }
 
+// ── Persistencia (sobrevive recarga por bloqueo de pantalla en iOS) ──
+interface SesionGuardada {
+  rutinaId: number;
+  semanaId: number;
+  diaId: number;
+  startTime: number;
+  ejercicios: EjercicioSesionForm[];
+  syncStrava: boolean;
+  savedAt: number;
+}
+
+function guardarSesion() {
+  try {
+    const data: SesionGuardada = {
+      rutinaId,
+      semanaId,
+      diaId,
+      startTime: startTime.value,
+      ejercicios: ejercicios.value,
+      syncStrava: syncStrava.value,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // Storage lleno o no disponible — la sesión simplemente no sobrevivirá una recarga
+  }
+}
+
+function loadSesionGuardada(): SesionGuardada | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as SesionGuardada;
+    if (Date.now() - data.savedAt > MAX_RESUME_AGE_MS) return null;
+    if (data.rutinaId !== rutinaId || data.semanaId !== semanaId || data.diaId !== diaId) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function limpiarSesionGuardada() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* no-op */ }
+}
+
 function goBack() {
+  forceLeave = true;
+  limpiarSesionGuardada();
   router.back();
 }
+
+// Intercepta navegación (botón/gesto "atrás") mientras haya una sesión en curso
+onBeforeRouteLeave(() => {
+  if (forceLeave) return true;
+  showCancelar.value = true;
+  return false;
+});
 
 async function finalizar() {
   const token = authStore.session?.access_token;
@@ -338,6 +409,7 @@ async function finalizar() {
   saving.value = true;
   if (timerInterval) clearInterval(timerInterval);
   stopSilentAudio();
+  releaseWakeLock();
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 
   const duracion = Math.round(elapsed.value / 60);
@@ -364,11 +436,14 @@ async function finalizar() {
       },
       token,
     );
+    limpiarSesionGuardada();
+    forceLeave = true;
     router.push({ name: 'dashboard' });
   } catch {
     error.value = 'No se pudo guardar la sesión. Intentá de nuevo.';
     saving.value = false;
     startSilentAudio();
+    requestWakeLock();
     timerInterval = setInterval(() => {
       recalcularElapsed();
       if (!showLimite.value && elapsed.value >= LIMITE_SEGUNDOS) {
@@ -419,37 +494,47 @@ onMounted(async () => {
   }
   diaNombre.value = dia.nombre;
 
-  // Construir ejercicios con sus series pre-cargadas
-  ejercicios.value = dia.ejercicios.map((ej) => {
-    const ejSemana = ej.ejercicioSemanas.find((es) => es.semanaId === semanaId)
-      ?? ej.ejercicioSemanas[0];
-    const cantSeries = ejSemana?.series ?? 3;
+  // Restaurar una sesión en curso (ej. la pestaña se recargó por bloqueo de pantalla en iOS)
+  const guardada = loadSesionGuardada();
+  if (guardada) {
+    ejercicios.value = guardada.ejercicios;
+    syncStrava.value = guardada.syncStrava;
+    startTime.value = guardada.startTime;
+  } else {
+    // Construir ejercicios con sus series pre-cargadas
+    ejercicios.value = dia.ejercicios.map((ej) => {
+      const ejSemana = ej.ejercicioSemanas.find((es) => es.semanaId === semanaId)
+        ?? ej.ejercicioSemanas[0];
+      const cantSeries = ejSemana?.series ?? 3;
 
-    const series: SerieForm[] = [];
-    for (let i = 0; i < cantSeries; i++) {
-      // Buscar kg desde serieDetalles si existen
-      const detalle = ejSemana?.serieDetalles?.find((d) => d.numero_serie === i + 1);
-      series.push({
-        numero: i + 1,
-        kg: detalle?.kg ?? ejSemana?.kg ?? null,
-        reps: ejSemana?.reps ?? 0,
-        completada: false,
-      });
-    }
+      const series: SerieForm[] = [];
+      for (let i = 0; i < cantSeries; i++) {
+        // Buscar kg desde serieDetalles si existen
+        const detalle = ejSemana?.serieDetalles?.find((d) => d.numero_serie === i + 1);
+        series.push({
+          numero: i + 1,
+          kg: detalle?.kg ?? ejSemana?.kg ?? null,
+          reps: ejSemana?.reps ?? 0,
+          completada: false,
+        });
+      }
 
-    return {
-      ejercicioId: ej.id,
-      nombre: ej.catalogoEjercicio?.nombre ?? 'Ejercicio',
-      codigo: ej.codigo ?? null,
-      series,
-    };
-  });
+      return {
+        ejercicioId: ej.id,
+        nombre: ej.catalogoEjercicio?.nombre ?? 'Ejercicio',
+        codigo: ej.codigo ?? null,
+        series,
+      };
+    });
+    startTime.value = Date.now();
+  }
 
   loading.value = false;
 
   // Iniciar timer
-  startTime.value = Date.now();
+  if (silentAudioEl.value) silentAudioEl.value.src = SILENT_AUDIO_SRC;
   startSilentAudio();
+  requestWakeLock();
   updateMediaSession();
   timerInterval = setInterval(() => {
     recalcularElapsed();
@@ -460,13 +545,17 @@ onMounted(async () => {
   }, 1000);
 
   document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('pagehide', guardarSesion);
   watch(ejercicioActual, () => updateMediaSession());
+  watch(ejercicios, guardarSesion, { deep: true });
 });
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
   document.removeEventListener('visibilitychange', onVisibilityChange);
+  window.removeEventListener('pagehide', guardarSesion);
   stopSilentAudio();
+  releaseWakeLock();
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 });
 </script>
