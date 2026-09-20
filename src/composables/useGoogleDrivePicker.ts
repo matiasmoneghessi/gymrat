@@ -4,15 +4,27 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_DRIVE_CLIENT_ID || import.m
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
+const SPREADSHEET_MIME_TYPES =
+  'application/vnd.google-apps.spreadsheet,' +
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,' +
+  'application/vnd.ms-excel,' +
+  'text/csv';
+
 interface PickedFile {
   id: string;
   name: string;
   mimeType: string;
 }
 
+export interface DriveFileContent {
+  content: string;
+  fileName: string;
+  encoding: 'text' | 'base64';
+  mimeType: string;
+}
+
 let gapiLoaded = false;
 let gisLoaded = false;
-let pickerApiLoaded = false;
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -32,10 +44,7 @@ async function ensureGapiLoaded(): Promise<void> {
   if (gapiLoaded) return;
   await loadScript('https://apis.google.com/js/api.js');
   await new Promise<void>((resolve) => {
-    (window as any).gapi.load('picker', () => {
-      pickerApiLoaded = true;
-      resolve();
-    });
+    (window as any).gapi.load('picker', () => resolve());
   });
   gapiLoaded = true;
 }
@@ -68,15 +77,7 @@ function showPicker(oauthToken: string): Promise<PickedFile | null> {
     const google = (window as any).google;
     const docsView = new google.picker.DocsView()
       .setIncludeFolders(true)
-      .setMimeTypes(
-        'application/vnd.google-apps.spreadsheet,' +
-        'application/vnd.google-apps.document,' +
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,' +
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document,' +
-        'text/plain,' +
-        'text/csv,' +
-        'application/pdf'
-      );
+      .setMimeTypes(SPREADSHEET_MIME_TYPES);
 
     const picker = new google.picker.PickerBuilder()
       .addView(docsView)
@@ -94,62 +95,84 @@ function showPicker(oauthToken: string): Promise<PickedFile | null> {
           resolve(null);
         }
       })
-      .setTitle('Seleccioná el archivo de tu rutina')
+      .setTitle('Seleccioná un CSV o Excel con tu rutina')
       .build();
 
     picker.setVisible(true);
   });
 }
 
-async function downloadFileContent(fileId: string, mimeType: string, oauthToken: string): Promise<string> {
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function isExcelMimeType(mimeType: string): boolean {
+  return (
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel' ||
+    mimeType === 'application/vnd.ms-excel.sheet.macroEnabled.12'
+  );
+}
+
+async function downloadFileContent(
+  fileId: string,
+  mimeType: string,
+  fileName: string,
+  oauthToken: string,
+): Promise<DriveFileContent> {
   const headers = { Authorization: `Bearer ${oauthToken}` };
 
-  // Google Docs/Sheets need to be exported as text
   if (mimeType === 'application/vnd.google-apps.spreadsheet') {
     const res = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/csv`,
       { headers },
     );
-    if (!res.ok) throw new Error('Error al descargar el archivo');
-    return res.text();
+    if (!res.ok) throw new Error('Error al descargar la planilla de Google Sheets');
+    const content = await res.text();
+    return { content, fileName, encoding: 'text', mimeType: 'text/csv' };
   }
 
-  if (mimeType === 'application/vnd.google-apps.document') {
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`,
-      { headers },
-    );
-    if (!res.ok) throw new Error('Error al descargar el archivo');
-    return res.text();
-  }
-
-  // Binary files (xlsx, docx, pdf) - download and read as text
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-    { headers },
-  );
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers,
+  });
   if (!res.ok) throw new Error('Error al descargar el archivo');
 
-  // For CSV/text files, return as text
-  if (mimeType === 'text/plain' || mimeType === 'text/csv') {
-    return res.text();
+  if (mimeType === 'text/csv' || fileName.toLowerCase().endsWith('.csv')) {
+    return { content: await res.text(), fileName, encoding: 'text', mimeType: 'text/csv' };
   }
 
-  // For xlsx/docx/pdf, we can't easily parse them in the browser.
-  // Request as text/csv export if spreadsheet, otherwise get text content
-  // For binary formats, read as text (the backend + OpenAI will handle it)
-  return res.text();
+  if (isExcelMimeType(mimeType) || /\.xlsx?$/i.test(fileName)) {
+    const buffer = await res.arrayBuffer();
+    return {
+      content: arrayBufferToBase64(buffer),
+      fileName,
+      encoding: 'base64',
+      mimeType,
+    };
+  }
+
+  throw new Error('Formato no soportado. Usá CSV o Excel (.xlsx, .xls).');
 }
 
 export function useGoogleDrivePicker() {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  async function pickAndDownload(): Promise<{ content: string; fileName: string } | null> {
+  async function pickAndDownload(): Promise<DriveFileContent | null> {
     loading.value = true;
     error.value = null;
 
     try {
+      if (!GOOGLE_CLIENT_ID || !GOOGLE_API_KEY) {
+        throw new Error('Faltan VITE_GOOGLE_CLIENT_ID o VITE_GOOGLE_API_KEY en la configuración.');
+      }
+
       await Promise.all([ensureGapiLoaded(), ensureGisLoaded()]);
 
       const oauthToken = await getOAuthToken();
@@ -157,12 +180,10 @@ export function useGoogleDrivePicker() {
 
       if (!file) {
         loading.value = false;
-        return null; // User cancelled
+        return null;
       }
 
-      const content = await downloadFileContent(file.id, file.mimeType, oauthToken);
-
-      return { content, fileName: file.name };
+      return await downloadFileContent(file.id, file.mimeType, file.name, oauthToken);
     } catch (err: any) {
       error.value = err.message || 'Error al acceder a Google Drive';
       return null;

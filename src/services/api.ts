@@ -183,10 +183,16 @@ export async function importarRutinaDesdeTexto(
   contenido: string,
   fileName: string,
   token: string,
+  options?: { encoding?: 'text' | 'base64'; mimeType?: string },
 ): Promise<ImportarRutinaResult> {
   const { data } = await api.post<{ success: boolean; data: ImportarRutinaResult }>(
     '/rutinas/importar',
-    { contenido, fileName },
+    {
+      contenido,
+      fileName,
+      encoding: options?.encoding ?? 'text',
+      mimeType: options?.mimeType,
+    },
     authHeaders(token),
   );
   return data.data;

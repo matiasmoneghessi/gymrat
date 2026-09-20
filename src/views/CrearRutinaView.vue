@@ -20,13 +20,15 @@
           <path d="M73.4 27.5L59.65 4.5a15.92 15.92 0 00-3.3-3.3L43.65 25l16.15 30H87.3a15.92 15.92 0 00-1.88-7.6L73.4 27.5z" fill="#FFBA00"/>
         </svg>
         <span class="drive-import-label">Importar rutina desde Google Drive</span>
+        <span class="drive-import-hint">CSV o Excel</span>
       </div>
       <button
         type="button"
         class="btn-drive"
-        disabled
+        :disabled="driveLoading || drivePickerLoading"
+        @click="importarDesdeDrive"
       >
-        Abrir Drive
+        {{ driveLoading || drivePickerLoading ? 'Procesando...' : 'Abrir Drive' }}
       </button>
     </div>
     <p v-if="driveError" class="error-banner">{{ driveError }}</p>
@@ -280,7 +282,10 @@ async function importarDesdeDrive() {
   // 2. Enviar el contenido al backend para que la IA lo procese
   driveLoading.value = true;
   try {
-    const rutina = await importarRutinaDesdeTexto(result.content, result.fileName, token);
+    const rutina = await importarRutinaDesdeTexto(result.content, result.fileName, token, {
+      encoding: result.encoding,
+      mimeType: result.mimeType,
+    });
 
     // 3. Aplicar el resultado al formulario
     form.nombre = rutina.nombre;
@@ -443,6 +448,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .drive-import-label {
