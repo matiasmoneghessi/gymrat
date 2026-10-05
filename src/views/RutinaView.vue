@@ -68,12 +68,15 @@
       </div>
 
       <section class="dias-grid">
-        <DiaCard
-          v-for="dia in semanaSeleccionada.dias"
+        <DiaTabla
+          v-for="dia in rutina!.semanas[0].dias"
           :key="dia.id"
           :dia="dia"
+          :semanas="rutina!.semanas"
+          :semana-activa="semanaActiva"
           :mostrar-entrenar="true"
-          @entrenar="iniciarSesion(dia.id)"
+          @seleccionar-semana="semanaActiva = $event"
+          @entrenar="iniciarSesion"
         />
       </section>
     </div>
@@ -86,7 +89,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useRutinaStore } from '@/stores/rutina';
 import { useAuthStore } from '@/stores/auth';
 import { shareRutina } from '@/services/api';
-import DiaCard from '@/components/DiaCard.vue';
+import DiaTabla from '@/components/DiaTabla.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 
