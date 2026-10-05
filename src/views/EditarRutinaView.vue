@@ -29,9 +29,11 @@
           <button type="button" class="btn-add" @click="addSemana">+ Semana</button>
         </div>
 
-        <div v-for="(semana, sIdx) in form.semanas" :key="sIdx" class="card semana-block">
-          <div class="block-header">
-            <span class="pill">Semana {{ sIdx + 1 }}</span>
+        <div class="card semanas-list">
+          <div v-for="(semana, sIdx) in form.semanas" :key="sIdx" class="semana-row">
+            <span class="pill">S{{ sIdx + 1 }}</span>
+            <input v-model="semana.nombre" type="text" class="form-input" placeholder="Nombre (Ej: Adaptación)" />
+            <input v-model="semana.tipo_esfuerzo" type="text" class="form-input" placeholder="Esfuerzo (Ej: Moderado)" />
             <button
               v-if="form.semanas.length > 1"
               type="button"
@@ -41,114 +43,93 @@
               Eliminar
             </button>
           </div>
+        </div>
+      </section>
+
+      <!-- Días: una tabla por día, filas = ejercicios, 3 columnas por semana -->
+      <section class="form-section">
+        <div class="section-header">
+          <h2 class="section-title">Días</h2>
+          <button type="button" class="btn-add" @click="addDia">+ Día</button>
+        </div>
+
+        <div v-for="(dia, dIdx) in diasRef" :key="dIdx" class="card dia-block">
+          <div class="block-header">
+            <span class="pill">Día {{ dIdx + 1 }}</span>
+            <button v-if="diasRef.length > 1" type="button" class="btn-remove" @click="removeDia(dIdx)">
+              Eliminar
+            </button>
+          </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
               <label class="form-label">Nombre</label>
-              <input v-model="semana.nombre" type="text" class="form-input" placeholder="Ej: Adaptación" />
+              <input :value="dia.nombre" type="text" class="form-input" placeholder="Ej: Tren superior"
+                @input="setDia(dIdx, 'nombre', ($event.target as HTMLInputElement).value)" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label class="form-label">Movilidad (opcional)</label>
+              <input :value="dia.movilidad" type="text" class="form-input"
+                @input="setDia(dIdx, 'movilidad', ($event.target as HTMLInputElement).value)" />
             </div>
             <div class="form-group flex-1">
-              <label class="form-label">Tipo de esfuerzo</label>
-              <input v-model="semana.tipo_esfuerzo" type="text" class="form-input" placeholder="Ej: Moderado" />
+              <label class="form-label">Activación (opcional)</label>
+              <input :value="dia.activacion" type="text" class="form-input"
+                @input="setDia(dIdx, 'activacion', ($event.target as HTMLInputElement).value)" />
             </div>
           </div>
 
-          <!-- Días -->
-          <div class="dias-section">
-            <div class="section-header sub">
-              <h3 class="section-subtitle">Días</h3>
-              <button type="button" class="btn-add btn-add-sm" @click="addDia(sIdx)">+ Día</button>
-            </div>
-
-            <div v-for="(dia, dIdx) in semana.dias" :key="dIdx" class="dia-block">
-              <div class="block-header">
-                <span class="pill pill-subtle">Día {{ dIdx + 1 }}</span>
-                <button
-                  v-if="semana.dias.length > 1"
-                  type="button"
-                  class="btn-remove btn-remove-sm"
-                  @click="removeDia(sIdx, dIdx)"
-                >
-                  Eliminar
-                </button>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label">Nombre</label>
-                  <input v-model="dia.nombre" type="text" class="form-input" placeholder="Ej: Tren superior" />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label">Movilidad (opcional)</label>
-                  <input v-model="dia.movilidad" type="text" class="form-input" />
-                </div>
-                <div class="form-group flex-1">
-                  <label class="form-label">Activación (opcional)</label>
-                  <input v-model="dia.activacion" type="text" class="form-input" />
-                </div>
-              </div>
-
-              <!-- Ejercicios -->
-              <div class="ejercicios-section">
-                <div class="section-header sub">
-                  <h4 class="section-subtitle">Ejercicios</h4>
-                  <button type="button" class="btn-add btn-add-sm" @click="addEjercicio(sIdx, dIdx)">
-                    + Ejercicio
-                  </button>
-                </div>
-
-                <div v-for="(ej, eIdx) in dia.ejercicios" :key="eIdx" class="ejercicio-block">
-                  <div class="block-header">
-                    <span class="pill pill-subtle">Ej {{ eIdx + 1 }}</span>
-                    <button
-                      v-if="dia.ejercicios.length > 1"
-                      type="button"
-                      class="btn-remove btn-remove-sm"
-                      @click="removeEjercicio(sIdx, dIdx, eIdx)"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-
-                  <div class="form-row">
-                    <div class="form-group flex-1">
-                      <label class="form-label">Nombre</label>
-                      <EjercicioSelect v-model="ej.catalogoEjercicioId" />
+          <div class="tabla-scroll">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th class="col-ejercicio" rowspan="2">Ejercicio</th>
+                  <th v-for="(_, sIdx) in form.semanas" :key="sIdx" colspan="3" class="col-semana">S{{ sIdx + 1 }}</th>
+                </tr>
+                <tr>
+                  <template v-for="(_, sIdx) in form.semanas" :key="sIdx">
+                    <th class="sub">Ser</th>
+                    <th class="sub">Rep</th>
+                    <th class="sub">Kg</th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(ej, eIdx) in dia.ejercicios" :key="eIdx">
+                  <td class="col-ejercicio">
+                    <EjercicioSelect
+                      floating
+                      :model-value="ej.catalogoEjercicioId"
+                      @update:model-value="setEj(dIdx, eIdx, 'catalogoEjercicioId', $event)"
+                    />
+                    <div class="ej-extra">
+                      <input :value="ej.codigo" type="text" class="form-input form-input-xs codigo" placeholder="Cód."
+                        @input="setEj(dIdx, eIdx, 'codigo', ($event.target as HTMLInputElement).value)" />
+                      <button type="button" class="tipo-reps-toggle" @click="toggleTipoReps(dIdx, eIdx)">
+                        {{ ej.tipo_reps === 'seg' ? 'Seg' : 'Reps' }} ↕
+                      </button>
+                      <button v-if="dia.ejercicios.length > 1" type="button" class="btn-remove btn-remove-sm"
+                        @click="removeEjercicio(dIdx, eIdx)">Quitar</button>
                     </div>
-                    <div class="form-group">
-                      <label class="form-label">Código (opcional)</label>
-                      <input v-model="ej.codigo" type="text" class="form-input form-input-sm" placeholder="Ej: A1" />
-                    </div>
-                  </div>
-
-                  <!-- Datos de esta semana -->
-                  <div class="semana-data-fields">
-                    <div class="mini-field">
-                      <label>Kg</label>
-                      <input v-model.number="ej.kg" type="number" step="0.5" class="form-input form-input-xs" />
-                    </div>
-                    <div class="mini-field">
-                      <label>
-                        <button
-                          type="button"
-                          class="tipo-reps-toggle"
-                          @click="ej.tipo_reps = ej.tipo_reps === 'reps' ? 'seg' : 'reps'"
-                        >{{ ej.tipo_reps === 'seg' ? 'Seg' : 'Reps' }} ↕</button>
-                      </label>
-                      <input v-model.number="ej.reps" type="number" class="form-input form-input-xs" />
-                    </div>
-                    <div class="mini-field">
-                      <label>Series</label>
-                      <input v-model.number="ej.series" type="number" class="form-input form-input-xs" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </td>
+                  <template v-for="(_, sIdx) in form.semanas" :key="sIdx">
+                    <template v-if="celda(sIdx, dIdx, eIdx)">
+                      <td class="celda"><input v-model.number="celda(sIdx, dIdx, eIdx)!.series" type="number" inputmode="numeric" class="form-input form-input-xs" /></td>
+                      <td class="celda"><input v-model.number="celda(sIdx, dIdx, eIdx)!.reps" type="number" inputmode="numeric" class="form-input form-input-xs" /></td>
+                      <td class="celda"><input v-model.number="celda(sIdx, dIdx, eIdx)!.kg" type="number" step="0.5" inputmode="decimal" class="form-input form-input-xs" /></td>
+                    </template>
+                    <template v-else>
+                      <td class="celda vacia" colspan="3">—</td>
+                    </template>
+                  </template>
+                </tr>
+              </tbody>
+            </table>
           </div>
+
+          <button type="button" class="btn-add btn-add-sm" @click="addEjercicio(dIdx)">+ Ejercicio</button>
         </div>
       </section>
 
@@ -255,20 +236,46 @@ function removeSemana(idx: number) {
   form.semanas.splice(idx, 1);
 }
 
-function addDia(sIdx: number) {
-  form.semanas[sIdx].dias.push(makeDia());
+// Los días y ejercicios se comparten entre semanas: la primera semana es la referencia
+const diasRef = computed(() => form.semanas[0]?.dias ?? []);
+
+function celda(sIdx: number, dIdx: number, eIdx: number): FormEjercicio | undefined {
+  return form.semanas[sIdx]?.dias[dIdx]?.ejercicios[eIdx];
 }
 
-function removeDia(sIdx: number, dIdx: number) {
-  form.semanas[sIdx].dias.splice(dIdx, 1);
+function setDia(dIdx: number, campo: 'nombre' | 'movilidad' | 'activacion', valor: string) {
+  form.semanas.forEach((s) => { if (s.dias[dIdx]) s.dias[dIdx][campo] = valor; });
 }
 
-function addEjercicio(sIdx: number, dIdx: number) {
-  form.semanas[sIdx].dias[dIdx].ejercicios.push(makeEjercicio());
+function setEj(dIdx: number, eIdx: number, campo: 'catalogoEjercicioId' | 'codigo', valor: string | number) {
+  form.semanas.forEach((s) => {
+    const ej = s.dias[dIdx]?.ejercicios[eIdx];
+    if (ej) (ej as unknown as Record<string, string | number>)[campo] = valor;
+  });
 }
 
-function removeEjercicio(sIdx: number, dIdx: number, eIdx: number) {
-  form.semanas[sIdx].dias[dIdx].ejercicios.splice(eIdx, 1);
+function toggleTipoReps(dIdx: number, eIdx: number) {
+  const nuevo = celda(0, dIdx, eIdx)?.tipo_reps === 'seg' ? 'reps' : 'seg';
+  form.semanas.forEach((s) => {
+    const ej = s.dias[dIdx]?.ejercicios[eIdx];
+    if (ej) ej.tipo_reps = nuevo;
+  });
+}
+
+function addDia() {
+  form.semanas.forEach((s) => s.dias.push(makeDia()));
+}
+
+function removeDia(dIdx: number) {
+  form.semanas.forEach((s) => s.dias.splice(dIdx, 1));
+}
+
+function addEjercicio(dIdx: number) {
+  form.semanas.forEach((s) => s.dias[dIdx]?.ejercicios.push(makeEjercicio()));
+}
+
+function removeEjercicio(dIdx: number, eIdx: number) {
+  form.semanas.forEach((s) => s.dias[dIdx]?.ejercicios.splice(eIdx, 1));
 }
 
 function goBack() {
@@ -656,4 +663,21 @@ async function handleSubmit() {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+
+/* ── Tabla de ejercicios por semana ──────────────────────────── */
+.semanas-list { display: flex; flex-direction: column; gap: 8px; }
+.semana-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.semana-row .form-input { flex: 1; min-width: 120px; }
+.tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+.tabla { border-collapse: separate; border-spacing: 0; width: 100%; }
+.tabla th, .tabla td { padding: 4px 3px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.tabla thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 500; }
+.tabla .sub { font-size: 10px; }
+.col-semana { border-left: 1px solid rgba(255, 255, 255, 0.08); }
+.celda { min-width: 54px; }
+.celda:nth-of-type(3n + 2) { border-left: 1px solid rgba(255, 255, 255, 0.08); }
+.celda.vacia { color: var(--text-muted); min-width: 162px; }
+.col-ejercicio { position: sticky; left: 0; z-index: 2; background: var(--bg-elevated); min-width: 190px; text-align: left !important; }
+.ej-extra { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.codigo { width: 64px; min-height: 32px; padding: 4px; }
 </style>
