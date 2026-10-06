@@ -43,7 +43,7 @@
         <tbody>
           <tr v-for="fila in filas" :key="fila.ejercicio.id" @click="goDetalle(fila.ejercicio.id)">
             <td class="col-ejercicio">
-              <span class="ej-nombre">{{ fila.ejercicio.nombre }}</span>
+              <span class="ej-nombre">{{ fila.ejercicio.catalogoEjercicio?.nombre ?? 'Ejercicio' }}</span>
               <span v-if="fila.ejercicio.codigo" class="pill pill-subtle">{{ fila.ejercicio.codigo }}</span>
             </td>
             <template v-for="(c, i) in fila.celdas" :key="semanas[i].id">
@@ -103,7 +103,7 @@ function formatKg(es: EjercicioSemana): string {
 }
 
 function celdaDe(s: Semana, ej: Ejercicio): Celda {
-  const candidatos = diaDeSemana(s)?.ejercicios.filter((e) => e.nombre === ej.nombre) ?? [];
+  const candidatos = diaDeSemana(s)?.ejercicios.filter((e) => e.catalogoEjercicioId === ej.catalogoEjercicioId) ?? [];
   // El detalle de la semana puede vivir en el ejercicio propio de esa semana o en el de referencia
   const es =
     [...candidatos, ej]
