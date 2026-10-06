@@ -15,7 +15,7 @@
       @keydown.up.prevent="moveCursor(-1)"
     />
 
-    <ul v-if="open && (filtered.length > 0 || canCreate)" class="ej-dropdown">
+    <ul v-if="open && (filtered.length > 0 || canCreate)" class="ej-dropdown" :class="{ floating }" :style="floating ? floatStyle : undefined">
       <li
         v-if="canCreate"
         class="ej-option ej-crear"
@@ -43,7 +43,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useEjerciciosStore } from '@/stores/ejercicios';
 import type { EjercicioCatalogo } from '@/types';
 
-const props = defineProps<{ modelValue: number }>();
+const props = defineProps<{ modelValue: number; floating?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>();
 
 const store = useEjerciciosStore();
@@ -53,6 +53,26 @@ const open = ref(false);
 const cursor = ref(0);
 const creando = ref(false);
 const search = ref('');
+const floatStyle = ref<Record<string, string>>({});
+
+// En modo floating el desplegable es fixed para no quedar cortado por contenedores con scroll
+function posicionar() {
+  const r = inputRef.value?.getBoundingClientRect();
+  if (!r) return;
+  floatStyle.value = { top: `${r.bottom + 6}px`, left: `${r.left}px`, width: `${Math.max(r.width, 220)}px`, right: 'auto' };
+}
+
+watch(open, (v) => {
+  if (!props.floating) return;
+  if (v) {
+    posicionar();
+    window.addEventListener('scroll', posicionar, true);
+    window.addEventListener('resize', posicionar);
+  } else {
+    window.removeEventListener('scroll', posicionar, true);
+    window.removeEventListener('resize', posicionar);
+  }
+});
 
 // Sincronizar el texto del input con el nombre del ejercicio seleccionado
 watch(
@@ -85,6 +105,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', posicionar, true);
+  window.removeEventListener('resize', posicionar);
   document.removeEventListener('mousedown', onClickOutside);
 });
 
@@ -206,6 +228,10 @@ function handleEnter() {
     font-size: 16px;
     min-height: 48px;
   }
+}
+
+.ej-dropdown.floating {
+  position: fixed;
 }
 
 .ej-dropdown {
