@@ -8,6 +8,7 @@ import RutinaCompartidaView from '@/views/RutinaCompartidaView.vue';
 import EjercicioDetalleView from '@/views/EjercicioDetalleView.vue';
 import SesionView from '@/views/SesionView.vue';
 import DashboardView from '@/views/DashboardView.vue';
+import EstadisticasView from '@/views/EstadisticasView.vue';
 import StravaView from '@/views/StravaView.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -62,6 +63,11 @@ const routes: RouteRecordRaw[] = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
+  },
+  {
+    path: '/estadisticas',
+    name: 'estadisticas',
+    component: EstadisticasView,
   },
   {
     path: '/strava',
