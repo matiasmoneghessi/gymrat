@@ -125,7 +125,6 @@
       </button>
     </div>
 
-    <audio ref="silentAudioEl" loop playsinline style="display: none" />
 
     <!-- Modal límite de tiempo -->
     <div v-if="showLimite" class="overlay">
@@ -208,10 +207,6 @@ const LIMITE_SEGUNDOS = LIMITE_MINUTOS * 60;
 const STORAGE_KEY = 'gymrat:sesion-activa';
 const MAX_RESUME_AGE_MS = 24 * 60 * 60 * 1000; // no restaurar sesiones abandonadas hace más de 24h
 
-// WAV silencioso de 0.1s (8kHz, 8-bit mono), reproducido en loop — necesario para
-// que iOS reconozca la sesión como "media playback" real y muestre el lock screen player
-const SILENT_AUDIO_SRC =
-  'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
 
 const loading = ref(true);
 const error = ref('');
@@ -237,13 +232,6 @@ const timerDisplay = computed(() => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
 
-// Ejercicio actual (primero sin completar, para el lock screen)
-const ejercicioActual = computed(() =>
-  ejercicios.value.find((ej) => !ejCompletado(ej))?.nombre
-  ?? ejercicios.value[ejercicios.value.length - 1]?.nombre
-  ?? 'GymRat'
-);
-
 // Recalcula el tiempo basándose en el timestamp real (funciona con celular bloqueado)
 function recalcularElapsed() {
   elapsed.value = Math.floor((Date.now() - startTime.value) / 1000);
@@ -252,26 +240,10 @@ function recalcularElapsed() {
 function onVisibilityChange() {
   if (document.visibilityState === 'visible') {
     recalcularElapsed();
-    updateMediaSession();
     requestWakeLock();
   } else {
     guardarSesion();
   }
-}
-
-// ── Lock screen (Media Session API + elemento <audio> real) ─────
-const silentAudioEl = ref<HTMLAudioElement | null>(null);
-
-function startSilentAudio() {
-  const el = silentAudioEl.value;
-  if (!el) return;
-  el.play().catch(() => {
-    // Puede requerir gesto del usuario; se reintenta en el próximo play/toggle
-  });
-}
-
-function stopSilentAudio() {
-  silentAudioEl.value?.pause();
 }
 
 // ── Wake Lock (evita que se bloquee la pantalla mientras hay una sesión activa) ──
@@ -283,30 +255,13 @@ async function requestWakeLock() {
       wakeLock.value = await (navigator as Navigator & { wakeLock: WakeLock }).wakeLock.request('screen');
     }
   } catch {
-    // No soportado o permiso denegado — se ignora, el <audio>+MediaSession siguen activos
+    // No soportado o permiso denegado — se ignora
   }
 }
 
 function releaseWakeLock() {
   wakeLock.value?.release().catch(() => {});
   wakeLock.value = null;
-}
-
-function updateMediaSession() {
-  if (!('mediaSession' in navigator)) return;
-  const mins = Math.floor(elapsed.value / 60);
-  const secs = elapsed.value % 60;
-  const timer = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: ejercicioActual.value,
-    artist: `${timer}  ·  ${seriesCompletadas.value}/${seriesTotales.value} series`,
-    album: `${rutinaName.value} · ${diaNombre.value}`,
-    artwork: [
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-    ],
-  });
-  navigator.mediaSession.playbackState = 'playing';
 }
 
 // Progreso
@@ -408,9 +363,7 @@ async function finalizar() {
 
   saving.value = true;
   if (timerInterval) clearInterval(timerInterval);
-  stopSilentAudio();
   releaseWakeLock();
-  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 
   const duracion = Math.round(elapsed.value / 60);
 
@@ -442,15 +395,13 @@ async function finalizar() {
   } catch {
     error.value = 'No se pudo guardar la sesión. Intentá de nuevo.';
     saving.value = false;
-    startSilentAudio();
     requestWakeLock();
     timerInterval = setInterval(() => {
       recalcularElapsed();
       if (!showLimite.value && elapsed.value >= LIMITE_SEGUNDOS) {
         showLimite.value = true;
       }
-      updateMediaSession();
-    }, 1000);
+      }, 1000);
   }
 }
 
@@ -532,21 +483,16 @@ onMounted(async () => {
   loading.value = false;
 
   // Iniciar timer
-  if (silentAudioEl.value) silentAudioEl.value.src = SILENT_AUDIO_SRC;
-  startSilentAudio();
   requestWakeLock();
-  updateMediaSession();
   timerInterval = setInterval(() => {
     recalcularElapsed();
     if (!showLimite.value && elapsed.value >= LIMITE_SEGUNDOS) {
       showLimite.value = true;
     }
-    updateMediaSession();
   }, 1000);
 
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('pagehide', guardarSesion);
-  watch(ejercicioActual, () => updateMediaSession());
   watch(ejercicios, guardarSesion, { deep: true });
 });
 
@@ -554,9 +500,7 @@ onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
   document.removeEventListener('visibilitychange', onVisibilityChange);
   window.removeEventListener('pagehide', guardarSesion);
-  stopSilentAudio();
   releaseWakeLock();
-  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
 });
 </script>
 

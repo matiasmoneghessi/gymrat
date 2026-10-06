@@ -154,6 +154,20 @@ export interface StravaStatus {
   athleteId?: number;
 }
 
+export interface SesionSerieDetalle {
+  numero_serie: number;
+  kg: number | null;
+  reps: number;
+  completada: boolean;
+}
+
+export interface SesionEjercicioDetalle {
+  catalogoEjercicioId: number;
+  nombre: string;
+  completado: boolean;
+  series: SesionSerieDetalle[];
+}
+
 export interface SesionResumen {
   id: number;
   rutinaId: number;
@@ -164,4 +178,6 @@ export interface SesionResumen {
   duracion_minutos: number;
   totalEjercicios: number;
   ejerciciosCompletados: number;
+  /** Detalle por ejercicio y serie. Opcional hasta que el backend lo devuelva. */
+  ejercicios?: SesionEjercicioDetalle[];
 }
